@@ -1,0 +1,6 @@
+Some helpful links to understand the file format:
+    1) Wikipedia: https://en.wikipedia.org/wiki/AutoCAD_DXF
+    2) Autodesk: http://help.autodesk.com/view/OARX/2018/ENU/?guid=GUID-235B22E0-A567-4CF6-92D3-38A2306D73F3
+
+Potential Options for pre-written modules
+    1) dxfgrabber
