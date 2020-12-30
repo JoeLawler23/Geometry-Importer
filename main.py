@@ -1,5 +1,3 @@
-import dxfgrabber
-
 def dxfPrinter(filename):
     """
     This function prints out the given dxf file from the filename given
@@ -17,5 +15,4 @@ def dxfPrinter(filename):
     file.close
 
 if __name__ == "__main__":
-    # dxfPrinter("test")
-    dxf = dxfgrabber.readfile("test.dxf")
+    dxfPrinter("test")
