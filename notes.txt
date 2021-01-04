@@ -3,9 +3,9 @@ Some helpful links to understand the file format:
     2) Autodesk: http://help.autodesk.com/view/OARX/2018/ENU/?guid=GUID-235B22E0-A567-4CF6-92D3-38A2306D73F3
 
 Potential Options for pre-written modules:
-    1) dxfgrabber (https://dxfgrabber.readthedocs.io/en/latest/)
+    1) dxfgrabber (https://dxfgrabber.readthedocs.io/en/latest/) ** Outdated and has been replaced by ezdxf **
+    2) ezdxf (https://ezdxf.mozman.at/docs/index.html)
 
 Next Steps:
     1) Get a list of DXF files with varying geometries
-    2) Test dxfgrabber with gathered files
-    3) Ask if there is a specific format Mr. Pinkham wants the geometries in
+    2) Test ezdxf with gathered files
