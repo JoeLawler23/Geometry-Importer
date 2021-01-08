@@ -12,9 +12,9 @@ Next Steps:
 
 List of all DXF geometries in ezdxf
         POINT
-        LINE
-        CIRCLE
-        ARC
+        LINE - DONE just need to test
+        CIRCLE - DONE just need to test
+        ARC - DONE just need to test
         ELLIPSE
         LWPOLYLINE
         SPLINE
@@ -29,3 +29,8 @@ List of all DXF geometries in ezdxf
         TEXT
         MTEXT
         HATCH
+
+List of test files
+    1) Circles: A 3D grid of circles of various sizes and in various orientations
+    2) Lines:
+    3) Arcs:
