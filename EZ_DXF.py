@@ -18,10 +18,14 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         filename (str): DXF filename
 
     Returns:
-        List[Dict [str, List[tuple(float)]]]: A list of all geometry names and a list of associated points in 2D/3D, represented in nanometers and degrees
-        LINE: {'LINE': [START (X,Y,Z), END (X,Y,Z)]}
-        CIRCLE: {'CIRCLE': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
-        ARC: {'ARC': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
+        List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, 
+        represented in nanometers and degrees
+
+        List of supported geometries and how they are stored
+            LINE: {'LINE#': [START (X,Y,Z), END (X,Y,Z)]}
+            CIRCLE: {'CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
+            ARC: {'ARC#': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
+            ELLIPSE: 
     """
 
     # Account for missing file extension
@@ -91,15 +95,14 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         if name == 'CIRCLE':
             points.append(e.dxf.radius*conversionFactor) # Radius
             points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
-            points.append(e.dxf.extrusion.xyz)# Plane TODO does this need to be converted????
+            points.append(e.dxf.extrusion.xyz)# Plane
         elif name == 'LINE':
             points.append(tuple([conversionFactor*x for x in e.dxf.start.xyz]))# Start point
             points.append(tuple([conversionFactor*x for x in e.dxf.end.xyz]))# End point
         elif name == 'ARC':
-            # TODO
-            points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle
+            points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle ** Note angles go in a counter-clockwise rotation by defaul **
             points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
-            points.append(e.dxf.extrusion.xyz)# Plane TODO does this need to be converted????
+            points.append(e.dxf.extrusion.xyz)# Plane
         else:
             # Throw a warning when entity is not accounted for
             warning("UNKNOWN GEOMETRY: "+name)
@@ -118,6 +121,10 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     # Create DXF file with given filename
     dxf = ezdxf.new('R2010')
 
+    # Set output units
+    # TODO make this a parameter maybe???
+    dxf.units = 12 # 12 == Nanometers
+
     # Get modelspace
     msp = dxf.modelspace()
     
@@ -130,11 +137,11 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             # Add geometry in proper format
             # TODO figure out how to use the extrusion param to define the plane when creating objects
             if name.__contains__('CIRCLE'):
-                msp.add_circle(points[1],points[0])
+                msp.add_circle(points[1],points[0],dxfattribs={'extrusion':points[2]})
             elif name.__contains__('LINE'):
                 msp.add_line(points[0],points[1])
             elif name.__contains__('ARC'):
-                msp.add_arc(points[1],points[0][0],points[0][1],points[0][2],False) # TODO figure out last param
+                msp.add_arc(points[1],points[0][0],points[0][1],points[0][2],True,dxfattribs={'extrusion':points[2]})
             else:
                 # Throw a warning when entity is not accounted for
                 warning("UNKNOWN GEOMETRY: "+name)
@@ -152,4 +159,5 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     
 
 if __name__ == "__main__":
-    export_dxf_file("Exported.dxf",import_dxf_file("3D Examples.dxf"))
+    geometries = import_dxf_file("Test Files/Circles.dxf")
+    export_dxf_file("Test Files/Circles Exported.dxf",geometries)
