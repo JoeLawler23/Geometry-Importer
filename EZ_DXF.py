@@ -73,10 +73,14 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     9:25400, 10:914400000, 11:0.1, 12:1, 13:1000, 14:100000000, 15:10000000000, 16:100000000000, 17:1.0E+18, 18:1.495978707E+20, 19:9.461E+24,
     20:3.0856775814914E+25, 21:304800609.6, 22:25400050.8, 23:914400000, 24:1609347219000}[units]
 
-    # Add entities to geometry
+    # Geometry is a single geometric entity
     geometry: List[Dict [str, List[Tuple[[float], ...]]]] = []
-    for e in entities:
 
+    # Id in order to identify a specific entity
+    id: int = 0
+
+    # Cycle through all entities
+    for e in entities:
         # Entity name
         name: str = e.DXFTYPE
 
@@ -101,13 +105,51 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             warning("UNKNOWN GEOMETRY: "+name)
         
         # Add entity name and corresponding points to array
-        geometry.append({name: points})
+        geometry.append({name+str(id): points})
+
+        # Increment the id
+        id+= 1
 
     # Return array of all entities    
     return geometry
 
-# def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple(float,..)]], **args = {}) -> bool:
-#     # returns True if successful
+def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
+
+    # Create DXF file with given filename
+    dxf = ezdxf.new('R2010')
+
+    # Get modelspace
+    msp = dxf.modelspace()
+    
+    # Add each entitiy in the passed list
+    for entry in scans:
+        for entity in entry:
+            name: str = entity
+            points: List[Tuple[[float], ...]] = entry.get(name)
+
+            # Add geometry in proper format
+            # TODO figure out how to use the extrusion param to define the plane when creating objects
+            if name.__contains__('CIRCLE'):
+                msp.add_circle(points[1],points[0])
+            elif name.__contains__('LINE'):
+                msp.add_line(points[0],points[1])
+            elif name.__contains__('ARC'):
+                msp.add_arc(points[1],points[0][0],points[0][1],points[0][2],False) # TODO figure out last param
+            else:
+                # Throw a warning when entity is not accounted for
+                warning("UNKNOWN GEOMETRY: "+name)
+
+    # Append file extension if necessary
+    if not filename.endswith(".dxf"):
+        # add extension
+        filename = filename + ".dxf"
+
+    # Save DXF file
+    dxf.saveas(filename)
+
+    # Returns True if successful
+    return True
+    
 
 if __name__ == "__main__":
-    points = import_dxf_file("3D Examples.dxf")
+    export_dxf_file("Exported.dxf",import_dxf_file("3D Examples.dxf"))
