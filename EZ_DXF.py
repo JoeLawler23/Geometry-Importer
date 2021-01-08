@@ -21,7 +21,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         List[Dict [str, List[tuple(float)]]]: A list of all geometry names and a list of associated points in 2D/3D, represented in nanometers and degrees
         LINE: {'LINE': [START (X,Y,Z), END (X,Y,Z)]}
         CIRCLE: {'CIRCLE': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
-        ARC:
+        ARC: {'ARC': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
     """
 
     # Account for missing file extension
