@@ -2,6 +2,7 @@
 Module for importing and exporting DXF files
 """
 
+from logging import warning
 from typing import Dict, List, Tuple
 import ezdxf
 
@@ -17,30 +18,30 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         filename (str): DXF filename
 
     Returns:
-        List[Dict [str, List[tuple(float)]]]: A list of all geometry names and a list of associated points in 2D/3D, represented in nanometers
+        List[Dict [str, List[tuple(float)]]]: A list of all geometry names and a list of associated points in 2D/3D, represented in nanometers and degrees
         LINE: {'LINE': [START (X,Y,Z), END (X,Y,Z)]}
         CIRCLE: {'CIRCLE': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
         ARC:
     """
 
-    # account for missing file extension
+    # Account for missing file extension
     if not filename.endswith(".dxf"):
         # add extension
         filename = filename + ".dxf"
 
-    # import file
+    # Import file
     try:
         dxf = ezdxf.readfile(filename)
     except IOError or ezdxf.DXFStructureError:
-        #  catch errors
+        # Catch errors
         # TODO make sure this is what he wants
         raise Exception ('Invalid/Corrupt DXF File')
 
-    # get all entities from dxf
+    # Get all entities from dxf
     msp = dxf.modelspace()
     entities = msp.entity_space
 
-    # figure out the conversion factor to nanometers
+    # Get conversion factor to nanometers
     # TODO throw warning if the unit to too big ???
     units: int = dxf.units
     #0 = Unitless (NO CONVERION USED)
@@ -72,28 +73,37 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     9:25400, 10:914400000, 11:0.1, 12:1, 13:1000, 14:100000000, 15:10000000000, 16:100000000000, 17:1.0E+18, 18:1.495978707E+20, 19:9.461E+24,
     20:3.0856775814914E+25, 21:304800609.6, 22:25400050.8, 23:914400000, 24:1609347219000}[units]
 
-    # add entities to geometry
+    # Add entities to geometry
     geometry: List[Dict [str, List[Tuple[[float], ...]]]] = []
     for e in entities:
 
-        # entity name
+        # Entity name
         name: str = e.DXFTYPE
+
+        # Create points array for entity's points
         points: List[Tuple[[float], ...]] = [] 
 
-        # determine entity and get information to store
-        # TODO determine all entities and how to store for each entity
-        # TODO convert to microns
+        # Determine entity and get information to store
         if name == 'CIRCLE':
-            points.append(e.dxf.radius*conversionFactor)
-            points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))
-            points.append(tuple([conversionFactor*x for x in e.dxf.extrusion.xyz]))
-        if name == 'LINE':
-            points.append(tuple([conversionFactor*x for x in e.dxf.start.xyz]))
-            points.append(tuple([conversionFactor*x for x in e.dxf.end.xyz]))
-        if name == 'ARC':
+            points.append(e.dxf.radius*conversionFactor) # Radius
+            points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
+            points.append(e.dxf.extrusion.xyz)# Plane TODO does this need to be converted????
+        elif name == 'LINE':
+            points.append(tuple([conversionFactor*x for x in e.dxf.start.xyz]))# Start point
+            points.append(tuple([conversionFactor*x for x in e.dxf.end.xyz]))# End point
+        elif name == 'ARC':
             # TODO
-            print()
+            points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle
+            points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
+            points.append(e.dxf.extrusion.xyz)# Plane TODO does this need to be converted????
+        else:
+            # Throw a warning when entity is not accounted for
+            warning("UNKNOWN GEOMETRY: "+name)
+        
+        # Add entity name and corresponding points to array
         geometry.append({name: points})
+
+    # Return array of all entities    
     return geometry
 
 # def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple(float,..)]], **args = {}) -> bool:
@@ -101,4 +111,3 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
 
 if __name__ == "__main__":
     points = import_dxf_file("3D Examples.dxf")
-    print('END')
