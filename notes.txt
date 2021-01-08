@@ -9,3 +9,23 @@ Potential Options for pre-written modules:
 Next Steps:
     1) Get a list of DXF files with varying geometries
     2) Test ezdxf with gathered files
+
+List of all DXF geometries in ezdxf
+        POINT
+        LINE
+        CIRCLE
+        ARC
+        ELLIPSE
+        LWPOLYLINE
+        SPLINE
+        POLYLINE
+        3DFACE
+        SOLID
+        TRACE
+        SHAPE
+        MESH
+        ATTRIB
+        ATTDEF
+        TEXT
+        MTEXT
+        HATCH
