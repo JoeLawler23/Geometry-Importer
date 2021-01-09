@@ -2,7 +2,7 @@
 Module for importing and exporting DXF files
 """
 
-from logging import warning
+from logging import ERROR, error, warning
 from typing import Dict, List, Tuple
 import ezdxf
 
@@ -36,10 +36,10 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     # Import file
     try:
         dxf = ezdxf.readfile(filename)
-    except IOError or ezdxf.DXFStructureError:
+    except (IOError, FileNotFoundError, ezdxf.DXFStructureError):
         # Catch errors
         # TODO make sure this is what he wants
-        raise Exception ('Invalid/Corrupt DXF File')
+        raise Exception('Invalid/Corrupt DXF File') from None
 
     # Get all entities from dxf
     msp = dxf.modelspace()
@@ -128,6 +128,10 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     # Get modelspace
     msp = dxf.modelspace()
     
+    # Check to make sure that scans is not null
+    if len(scans) == 0:
+        raise Exception('Scans contains no objects') from None
+
     # Add each entitiy in the passed list
     for entry in scans:
         for entity in entry:
@@ -156,8 +160,6 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
     # Returns True if successful
     return True
-    
 
 if __name__ == "__main__":
-    geometries = import_dxf_file("Test Files/Circles.dxf")
-    export_dxf_file("Test Files/Circles Exported.dxf",geometries)
+    import_dxf_file("")
