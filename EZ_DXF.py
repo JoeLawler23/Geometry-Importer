@@ -17,6 +17,10 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     Args:
         filename (str): DXF filename
 
+    Raises:
+        Exception: If passed file name is not found, corrupt, or not a DXF file
+        Warning: Unknown Geometry is found
+
     Returns:
         List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, 
         represented in nanometers and degrees
@@ -46,36 +50,32 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     entities = msp.entity_space
 
     # Get conversion factor to nanometers
-    # TODO throw warning if the unit to too big ???
     units: int = dxf.units
-    #0 = Unitless (NO CONVERION USED)
-    #1 = Inches
-    #2 = Feet
-    #3 = Miles
-    #4 = Millimeters
-    #5 = Centimeters
-    #6 = Meters
-    #7 = Kilometers
-    #8 = Microinches
-    #9 = Mils
-    #10 = Yards
-    #11 = Angstroms
-    #12 = Nanometers
-    #13 = Microns
-    #14 = Decimeters
-    #15 = Decameters
-    #16 = Hectometers
-    #17 = Gigameters
-    #18 = Astronomical units
-    #19 = Light years
-    #20 = Parsecs
-    #21 = US Survey Feet
-    #22 = US Survey Inch
-    #23 = US Survey Yard
-    #24 = US Survey Mile
-    conversionFactor: float = {0:1.0, 1:25400000, 2:304800000, 3:1609344000000, 4:1000000, 5:10000000, 6:1000000000, 7:1000000000000, 8:25.4, 
-    9:25400, 10:914400000, 11:0.1, 12:1, 13:1000, 14:100000000, 15:10000000000, 16:100000000000, 17:1.0E+18, 18:1.495978707E+20, 19:9.461E+24,
-    20:3.0856775814914E+25, 21:304800609.6, 22:25400050.8, 23:914400000, 24:1609347219000}[units]
+    conversionFactor: float = {0:1.0,   #0 = Unitless (NO CONVERION USED)
+    1:3.9370079*10**-5,                 #1 = Inches
+    2:3.2808399*10**-6,                 #2 = Feet
+    3:6.2137119*10**-10,                #3 = Miles
+    4:1.0*10**-3,                       #4 = Millimeters
+    5:1.0*10**-4,                       #5 = Centimeters
+    6:1.0*10**-6,                       #6 = Meters
+    7:1.0*10**-9,                       #7 = Kilometers
+    8:39.37007874015748,                #8 = Microinches
+    9:39.37007874015748*10**-3,         #9 = Mils
+    10:1.093613*10**-6,                 #10 = Yards
+    11:1.0*10**4,                       #11 = Angstroms
+    12:1.0*10**3,                       #12 = Nanometers
+    13:1.0,                             #13 = Microns (CONVERTED TO)
+    14:1.0*10**-5,                      #14 = Decimeters
+    15:1.0*10**-7,                      #15 = Decameters
+    16:1.0*10**-8,                      #16 = Hectometers
+    17:1.0*10**-15,                     #17 = Gigameters
+    18:6.6845871226706*10**-18,         #18 = Astronomical units
+    19:1.0570008340246*10**-22,         #19 = Light years
+    20:3.2407792700054*10**-23,         #20 = Parsecs
+    21:3.2808399*10**-6,                #21 = US Survey Feet
+    22:3.9370079*10**-5,                #22 = US Survey Inch
+    23:1.093613*10**-6,                 #23 = US Survey Yard
+    24:6.2137119*10**-10}[units]        #24 = US Survey Mile
 
     # Geometry is a single geometric entity
     geometry: List[Dict [str, List[Tuple[[float], ...]]]] = []
@@ -116,14 +116,28 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     # Return array of all entities    
     return geometry
 
-def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
+def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], units: int = 13) -> bool:
+    """
+    Exporting a DXF file from a list of entities
+
+    Args:
+        filename (str): DXF filename
+        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to DXF file
+        units (int, optional): [description]. Units to export DXF in, defaults 13=Microns.
+
+    Raises:
+        Exception: If no scans are passed
+        Warning: Unknown Geometry is found
+
+    Returns:
+        bool: True upon successful completion
+    """
 
     # Create DXF file with given filename
     dxf = ezdxf.new('R2010')
 
     # Set output units
-    # TODO make this a parameter maybe???
-    dxf.units = 12 # 12 == Nanometers
+    dxf.units = units # 13 == Microns
 
     # Get modelspace
     msp = dxf.modelspace()
@@ -162,4 +176,4 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
 
 if __name__ == "__main__":
-    import_dxf_file("")
+    export_dxf_file("Test Files/Exported Basic Circle",import_dxf_file("Test Files/Basic Circle.dxf"))
