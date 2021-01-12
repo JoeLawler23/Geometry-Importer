@@ -4,7 +4,7 @@ Some helpful links to understand the file format:
 
 Potential Options for pre-written modules:
     1) dxfgrabber (https://dxfgrabber.readthedocs.io/en/latest/) ** Outdated and has been replaced by ezdxf **
-    2) ezdxf (https://ezdxf.mozman.at/docs/index.html)
+    2) ezdxf (https://ezdxf.mozman.at/docs/index.html) (https://github.com/mozman/ezdxf)
 
 Next Steps:
     1) Go through all geometries and implement
@@ -12,13 +12,13 @@ Next Steps:
     3) Test all geometries
 
 List of all DXF geometries in ezdxf
-        POINT
+        POINT -
         LINE - DONE just need to test
         CIRCLE - DONE/TESTED
         ARC - DONE just need to test
-        ELLIPSE
+        ELLIPSE - Working on it
         LWPOLYLINE
-        SPLINE
+        SPLINE - Working on it
         POLYLINE
         3DFACE
         SOLID
