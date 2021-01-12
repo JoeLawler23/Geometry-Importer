@@ -2,9 +2,10 @@
 Module for importing and exporting DXF files
 """
 
-from logging import ERROR, error, warning
+from logging import raiseExceptions, warning
 from typing import Dict, List, Tuple
 import ezdxf
+import math
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -26,10 +27,12 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         represented in nanometers and degrees
 
         List of supported geometries and how they are stored
-            LINE: {'LINE#': [START (X,Y,Z), END (X,Y,Z)]}
-            CIRCLE: {'CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
-            ARC: {'ARC#': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)]}
-            ELLIPSE: 
+            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
+            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
+            ELLIPSE:
+            SPLINE:
+            LWPOLYLINE: 
     """
 
     # Account for missing file extension
@@ -103,6 +106,18 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle ** Note angles go in a counter-clockwise rotation by defaul **
             points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
             points.append(e.dxf.extrusion.xyz)# Plane
+        elif name == 'ELLIPSE':
+            points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
+            points.append(tuple([conversionFactor*x for x in e.dxf.major_axis.xyz]))# Length of major axis and the plane
+            points.append(e.dxf.ratio)# Ratio of minor to major axis, Start of ellipse curve, End of ellipse curve
+        # elif name == 'SPLINE':
+        #     # TODO
+        #     points.append([e.dxf.degree,e.CLOSED])# Degree, Closed ** Note closed is defined by whether or not the start and end match 1 = false and 0 = true
+        #     points.append(e.control_points)# Control Points TODO needs to be converted to proper units
+        #     points.append(e.knots)# Knot Points TODO needs to be converted to proper units
+        # elif name == 'LWPOLYLINE':
+        #     for i in e.lwpoints:
+        #         points.append(tuple([i])) # Points (x, y, [start_width, [end_width, [bulge]]])
         else:
             # Throw a warning when entity is not accounted for
             warning("UNKNOWN GEOMETRY: "+name)
@@ -150,16 +165,25 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     for entry in scans:
         for entity in entry:
             name: str = entity
+            geometry_name: str = ''.join([i for i in name if not i.isdigit()])
             points: List[Tuple[[float], ...]] = entry.get(name)
 
             # Add geometry in proper format
-            # TODO figure out how to use the extrusion param to define the plane when creating objects
-            if name.__contains__('CIRCLE'):
+            if geometry_name == 'CIRCLE':
                 msp.add_circle(points[1],points[0],dxfattribs={'extrusion':points[2]})
-            elif name.__contains__('LINE'):
+            elif geometry_name == 'LINE':
                 msp.add_line(points[0],points[1])
-            elif name.__contains__('ARC'):
+            elif geometry_name == 'ARC':
                 msp.add_arc(points[1],points[0][0],points[0][1],points[0][2],True,dxfattribs={'extrusion':points[2]})
+            elif geometry_name == 'ELLIPSE':
+                msp.add_ellipse(points[0],points[1],points[2][0])
+            # elif geometry_name == 'SPLINE':
+            #     if points[0][1] == 1:
+            #         msp.add_open_spline(points[1])
+            #     else:
+            #         msp.add_closed_spline(points[1],points[0][0],points[2])
+            # elif geometry_name == 'LWPOLYLINE':
+            #     msp.add_lwpolyline(points[0])
             else:
                 # Throw a warning when entity is not accounted for
                 warning("UNKNOWN GEOMETRY: "+name)
@@ -176,4 +200,5 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
 
 if __name__ == "__main__":
-    export_dxf_file("Test Files/Exported Basic Circle",import_dxf_file("Test Files/Basic Circle.dxf"))
+    geometries = import_dxf_file("Test Files/Example Geometries.dxf")
+    export_dxf_file("Test Files/Exported Example Geometries.dxf",geometries)
