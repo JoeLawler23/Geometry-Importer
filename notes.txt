@@ -12,12 +12,12 @@ Next Steps:
     3) Test all geometries
 
 List of all DXF geometries in ezdxf
-        POINT -
+        POINT
         LINE - DONE just need to test
         CIRCLE - DONE/TESTED
         ARC - DONE just need to test
-        ELLIPSE - Working on it
-        LWPOLYLINE
+        ELLIPSE - Done just need to test
+        LWPOLYLINE - Working on it
         SPLINE - Working on it
         POLYLINE
         3DFACE
