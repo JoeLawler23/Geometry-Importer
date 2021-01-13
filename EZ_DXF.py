@@ -2,10 +2,9 @@
 Module for importing and exporting DXF files
 """
 
-from logging import raiseExceptions, warning
+from logging import warning
 from typing import Dict, Iterable, List, Tuple
 import ezdxf
-import math
 
 from ezdxf.math import Vertex
 
@@ -121,9 +120,11 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Number of control points ** Note closed is defined by whether or not the start and end match 1 = false and 0 = true
             points[1:1] = control_points# Add control points to end of points list
             points.append(e.knots)# Knot Points
-        # elif name == 'LWPOLYLINE':
-        #     for i in e.lwpoints:
-        #         points.append(tuple([i])) # Points (x, y, [start_width, [end_width, [bulge]]])
+        elif name == 'LWPOLYLINE':
+           #TODO
+           print
+           # figure out if 2D or 3D
+           # figure out if a bulge, start width, and end width is necessary
         else:
             # Throw a warning when entity is not accounted for
             warning("UNKNOWN GEOMETRY: "+name)
@@ -191,12 +192,12 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
                     msp.add_open_spline(control_points,points[0][0],points[points[0][2]+1])
                 else:
                     msp.add_closed_spline(points[1],points[0][0],points[2])
-            # elif geometry_name == 'LWPOLYLINE':
-            #     #TODO
-            #     msp.add_lwpolyline(points[0])
+            elif geometry_name == 'LWPOLYLINE':
+                #TODO
+                msp.add_lwpolyline([(0,0,0),(1000,1000,2000),(1000,2000,2000)])
             else:
                 # Throw a warning when entity is not accounted for
-                warning("UNKNOWN GEOMETRY: "+name)
+                warning("UNKNOWN GEOMETRY: "+geometry_name)
 
     # Append file extension if necessary
     if not filename.endswith(".dxf"):
