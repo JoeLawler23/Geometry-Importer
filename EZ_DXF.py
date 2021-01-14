@@ -117,9 +117,10 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             for i in e.control_points:
                  control_points.append(tuple([conversionFactor*x for x in i]))# Converting control points
                  control_points_counter += 1
-            points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Number of control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
+            points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
             points[1:1] = control_points# Add control points to end of points list
             points.append(e.knots)# Knot Points
+            points.append(e.weights)# Weights Points
         elif name == 'LWPOLYLINE':
             # NOTE Seems like when creating a polygon in Fusion it will be stored as either a lwpolyline or a series of lines
             point: Tuple[[float], ...] = []
@@ -128,9 +129,12 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
                 if count%5 == 0 and count != 0:
                     points.append(point)
                     point = []
-                point.append(i*conversionFactor)
+                point.append(i)
                 count += 1
             points.append(point)
+            for point in points: # Converting points
+                point[0] *= conversionFactor
+                point[1] *= conversionFactor
             points.append(e.closed) # Add boolean for whether or not the polyline is closed
 
         else:
@@ -193,13 +197,13 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             elif geometry_name == 'ELLIPSE':
                 msp.add_ellipse(points[0],points[1],points[2])
             elif geometry_name == 'SPLINE':
+                control_points: Iterable[Vertex] = []
+                for i in range(points[0][2]):
+                    control_points.append(points[i+1])
                 if points[0][1] == 1:
-                    control_points: Iterable[Vertex] = []
-                    for i in range(points[0][2]):
-                        control_points.append(points[i+1])
-                    msp.add_open_spline(control_points,points[0][0],points[points[0][2]+1])
+                    msp.add_rational_spline(control_points,points[points[0][2]+2],points[0][0],points[points[0][2]+1])
                 else:
-                    msp.add_closed_spline(points[1],points[0][0],points[2])
+                    msp.add_closed_rational_spline(control_points,points[points[0][2]+2],points[0][0],points[points[0][2]+1])
             elif geometry_name == 'LWPOLYLINE':
                 closed: bool = points[-1]
                 del points[-1]
@@ -220,5 +224,5 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
 
 if __name__ == "__main__":
-    geometries = import_dxf_file("Test Files/Example Geometries.dxf")
-    export_dxf_file("Test Files/Exported Example Geometries.dxf",geometries)
+    geometries = import_dxf_file("Test Files/Current Troubling Geometries.dxf")
+    export_dxf_file("Test Files/Exported Current Troubling Geometries.dxf",geometries)
