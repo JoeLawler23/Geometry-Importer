@@ -12,15 +12,15 @@ Next Steps:
     3) Test all geometries
 
 List of all DXF geometries in ezdxf
-        POINT
+        POINT - ** can't create as Fusion does not save sketch points to a DXF file
         LINE - DONE just need to test
         CIRCLE - DONE/TESTED
         ARC - DONE just need to test
-        ELLIPSE - Done just need to test
-        LWPOLYLINE - Working on it
-        SPLINE - Working on it
-        POLYLINE
-        3DFACE
+        ELLIPSE - DONE just need to test
+        LWPOLYLINE - working on it, slot function on fusion still causes issues
+        SPLINE - DONE just need to test
+        POLYLINE - ** can'test because this is an older geometry type which Fusion does not support
+        3DFACE - 
         SOLID
         TRACE
         SHAPE
