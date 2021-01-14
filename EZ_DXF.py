@@ -104,7 +104,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             points.append(tuple([conversionFactor*x for x in e.dxf.start.xyz]))# Start point
             points.append(tuple([conversionFactor*x for x in e.dxf.end.xyz]))# End point
         elif name == 'ARC':
-            points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle ** Note angles go in a counter-clockwise rotation by defaul **
+            points.append([e.dxf.radius*conversionFactor,e.dxf.start_angle,e.dxf.end_angle])# Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by defaul **
             points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
             points.append(e.dxf.extrusion.xyz)# Plane
         elif name == 'ELLIPSE':
@@ -117,14 +117,22 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             for i in e.control_points:
                  control_points.append(tuple([conversionFactor*x for x in i]))# Converting control points
                  control_points_counter += 1
-            points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Number of control points ** Note closed is defined by whether or not the start and end match 1 = false and 0 = true
+            points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Number of control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
             points[1:1] = control_points# Add control points to end of points list
             points.append(e.knots)# Knot Points
         elif name == 'LWPOLYLINE':
-           #TODO
-           print
-           # figure out if 2D or 3D
-           # figure out if a bulge, start width, and end width is necessary
+            # NOTE Seems like when creating a polygon in Fusion it will be stored as either a lwpolyline or a series of lines
+            point: Tuple[[float], ...] = []
+            count: int = 0
+            for i in e.lwpoints.values: # Formating points
+                if count%5 == 0 and count != 0:
+                    points.append(point)
+                    point = []
+                point.append(i*conversionFactor)
+                count += 1
+            points.append(point)
+            points.append(e.closed) # Add boolean for whether or not the polyline is closed
+
         else:
             # Throw a warning when entity is not accounted for
             warning("UNKNOWN GEOMETRY: "+name)
@@ -193,8 +201,9 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
                 else:
                     msp.add_closed_spline(points[1],points[0][0],points[2])
             elif geometry_name == 'LWPOLYLINE':
-                #TODO
-                msp.add_lwpolyline([(0,0,0),(1000,1000,2000),(1000,2000,2000)])
+                closed: bool = points[-1]
+                del points[-1]
+                msp.add_lwpolyline(points,dxfattribs={'closed':closed})
             else:
                 # Throw a warning when entity is not accounted for
                 warning("UNKNOWN GEOMETRY: "+geometry_name)
