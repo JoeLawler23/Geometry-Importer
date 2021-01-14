@@ -1,7 +1,7 @@
 import unittest
 import EZ_DXF
 
-class File_Tests(unittest.TestCase):
+class Error_Tests(unittest.TestCase):
     """Test cases that may produce errors
 
     Args:
@@ -19,7 +19,7 @@ class File_Tests(unittest.TestCase):
         File missing extension import_dxf_file
         - Should properly append the file extension
         """
-        geometries = EZ_DXF.import_dxf_file("Test Files/One Circle")
+        geometries = EZ_DXF.import_dxf_file("Test Files/Basic Circle")
         self.assertEquals(1, len(geometries))
     def test3(self):
         """
@@ -109,7 +109,6 @@ class Geometry_Tests(unittest.TestCase):
         self.assertTrue(within_a_percent_tuple(circle9[1],(200.0*10**6,50.0*10**6,50.0*10**6)))# check center
         self.assertTrue(within_a_percent_tuple(circle9[2],(0.0,-1.0,0.0)))# check 3D orientation
         
-
 def within_a_percent_tuple(tuple1: tuple[float,...], tuple2: tuple[float,...]) -> bool:
     for i in range (len(tuple1)):
         float1: float = tuple1[int(i)]
