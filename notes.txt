@@ -12,15 +12,15 @@ Next Steps:
     3) Test all geometries
 
 List of all DXF geometries in ezdxf
-        POINT - ** can't create as Fusion does not save sketch points to a DXF file
-        LINE - DONE just need to test
-        CIRCLE - DONE/TESTED
-        ARC - DONE just need to test
-        ELLIPSE - DONE just need to test
-        LWPOLYLINE - working on it, slot function on fusion still causes issues
-        SPLINE - DONE just need to test
-        POLYLINE - ** can'test because this is an older geometry type which Fusion does not support
-        3DFACE - 
+        POINT
+        LINE
+        CIRCLE
+        ARC
+        ELLIPSE
+        LWPOLYLINE
+        SPLINE
+        POLYLINE
+        3DFACE
         SOLID
         TRACE
         SHAPE
@@ -30,3 +30,25 @@ List of all DXF geometries in ezdxf
         TEXT
         MTEXT
         HATCH
+
+Implemented Geometries:
+        LINE - DONE just need to test
+        CIRCLE - DONE/TESTED
+        ARC - DONE just need to test
+        ELLIPSE - DONE just need to test
+        LWPOLYLINE - Done just need to test
+        SPLINE - Done just need to test
+
+Notimplemented Geometries:
+        POINT - ** can't create as Fusion does not save sketch points to a DXF file
+        POLYLINE - ** can'test, this is an older geometry type which Fusion does not support
+        3DFACE - A 3D solid filled triangle/quadrilateral ** can't create in Fusion 
+        SOLID - A 2D/3D solid filled triangle/quadrilateral ** can't create in Fusion
+        TRACE - A solid filled triangle/quadrilateral **
+        SHAPE - Stored in .shx files and are used like block references ** don't need to worry about
+        MESH - A 3D plane with vertices ** can't create in Fusion
+        ATTRIB - A tag ** can't create in Fusion  
+        ATTDEF - Attribute definition for storing data in a block ** don't need to worry about
+        TEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
+        MTEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
+        HATCH - fills an area based on given geometries ** don't need to worry about
