@@ -46,7 +46,6 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         dxf = ezdxf.readfile(filename)
     except (IOError, FileNotFoundError, ezdxf.DXFStructureError):
         # Catch errors
-        # TODO make sure this is what he wants
         raise Exception('Invalid/Corrupt DXF File') from None
 
     # Get all entities from dxf
