@@ -7,9 +7,8 @@ Potential Options for pre-written modules:
     2) ezdxf (https://ezdxf.mozman.at/docs/index.html) (https://github.com/mozman/ezdxf)
 
 Next Steps:
-    1) Go through all geometries and implement
-    2) Create test file(s) for all geometries
-    3) Test all geometries
+    1) Create test file(s) for all geometries
+    2) Test all geometries
 
 List of all DXF geometries in ezdxf
         POINT
@@ -52,3 +51,6 @@ Notimplemented Geometries:
         TEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         MTEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         HATCH - fills an area based on given geometries ** don't need to worry about
+
+QUESTIONS:
+    1) Is the output format necessary for the import function docstring? If so, how do I format it properly?
