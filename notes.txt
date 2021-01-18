@@ -51,7 +51,3 @@ Notimplemented Geometries:
         TEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         MTEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         HATCH - fills an area based on given geometries ** don't need to worry about
-
-QUESTIONS:
-    1) Is the output format necessary for the import function docstring? If so, how do I format it properly?
-    2) Ask about the testing and how to properly test the outputs?
