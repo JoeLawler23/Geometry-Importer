@@ -54,3 +54,4 @@ Notimplemented Geometries:
 
 QUESTIONS:
     1) Is the output format necessary for the import function docstring? If so, how do I format it properly?
+    2) Ask about the testing and how to properly test the outputs?
