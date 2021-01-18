@@ -231,5 +231,5 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
 
 if __name__ == "__main__":
-    geometries = import_dxf_file("Test Files/Current Troubling Geometries.dxf")
-    export_dxf_file("Test Files/Exported Current Troubling Geometries.dxf",geometries)
+    geometries = import_dxf_file("Test Files/Example Geometries.dxf")
+    export_dxf_file("Test Files/Exported Example Geometries.dxf",geometries)
