@@ -5,6 +5,9 @@ Module for importing and exporting DXF files
 from logging import warning
 from typing import Dict, Iterable, List, Tuple
 import ezdxf
+from ezdxf.document import Drawing
+from ezdxf.entitydb import EntitySpace
+from ezdxf.layouts.layout import Modelspace
 
 from ezdxf.math import Vertex
 
@@ -31,9 +34,9 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
             ARC: ('ARC#': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
-            ELLIPSE:
-            SPLINE:
-            LWPOLYLINE: 
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
+            LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     """
 
     # Account for missing file extension
@@ -43,14 +46,14 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
 
     # Import file
     try:
-        dxf = ezdxf.readfile(filename)
+        dxf: Drawing = ezdxf.readfile(filename)
     except (IOError, FileNotFoundError, ezdxf.DXFStructureError):
         # Catch errors
         raise Exception('Invalid/Corrupt DXF File') from None
 
     # Get all entities from dxf
-    msp = dxf.modelspace()
-    entities = msp.entity_space
+    msp: Modelspace = dxf.modelspace()
+    entities: EntitySpace = msp.entity_space
 
     # Get conversion factor to nanometers
     units: int = dxf.units
@@ -109,33 +112,32 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         elif name == 'ELLIPSE':
             points.append(tuple([conversionFactor*x for x in e.dxf.center.xyz]))# Center
             points.append(tuple([conversionFactor*x for x in e.dxf.major_axis.xyz]))# Length of major axis and the plane
-            points.append(e.dxf.ratio)# Ratio of minor to major axis, Start of ellipse curve, End of ellipse curve
+            points.append(e.dxf.ratio)# Ratio of minor to major axis
         elif name == 'SPLINE':
             control_points_counter: int = 0
             control_points: List[Tuple[[float], ...]] = [] 
             for i in e.control_points:
-                 control_points.append(tuple([conversionFactor*x for x in i]))# Converting control points
+                 control_points.append(tuple([conversionFactor*x for x in i]))# Convert control points from vector to list of tuples
                  control_points_counter += 1
             points.append([e.dxf.degree,e.CLOSED,control_points_counter])# Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
             points[1:1] = control_points# Add control points to end of points list
-            points.append(e.knots)# Knot Points
-            points.append(e.weights)# Weights Points
+            points.append(e.knots)# Knots
+            points.append(e.weights)# Weights
         elif name == 'LWPOLYLINE':
             # NOTE Seems like when creating a polygon in Fusion it will be stored as either a lwpolyline or a series of lines
             point: Tuple[[float], ...] = []
             count: int = 0
-            for i in e.lwpoints.values: # Formating points
+            for i in e.lwpoints.values: # Format points
                 if count%5 == 0 and count != 0:
                     points.append(point)
                     point = []
                 point.append(i)
                 count += 1
             points.append(point)
-            for point in points: # Converting points
+            for point in points: # Convert first 2 points
                 point[0] *= conversionFactor
                 point[1] *= conversionFactor
             points.append(e.closed) # Add boolean for whether or not the polyline is closed
-
         else:
             # Throw a warning when entity is not accounted for
             warning("UNKNOWN GEOMETRY: "+name)
@@ -167,13 +169,13 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     """
 
     # Create DXF file with given filename
-    dxf = ezdxf.new('R2010')
+    dxf: Drawing = ezdxf.new('R2010')
 
     # Set output units
     dxf.units = units # 13 == Microns
 
     # Get modelspace
-    msp = dxf.modelspace()
+    msp: Modelspace = dxf.modelspace()
     
     # Check to make sure that scans is not null
     if len(scans) == 0:
@@ -182,30 +184,37 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     # Add each entitiy in the passed list
     for entry in scans:
         for entity in entry:
-            name: str = entity
-            geometry_name: str = ''.join([i for i in name if not i.isdigit()])
-            points: List[Tuple[[float], ...]] = entry.get(name)
+            name: str = entity# Name of geometry
+            geometry_name: str = ''.join([i for i in name if not i.isdigit()]) # Truncate name to just include the geometry
+            points: List[Tuple[[float], ...]] = entry.get(name) # List to store geometry
 
             # Add geometry in proper format
             if geometry_name == 'CIRCLE':
+                # Center, Radius, Attributes
                 msp.add_circle(points[1],points[0],dxfattribs={'extrusion':points[2]})
             elif geometry_name == 'LINE':
+                # Start point, End point
                 msp.add_line(points[0],points[1])
             elif geometry_name == 'ARC':
+                # Center, Radius, Start Angle, End Angle, IsCounterClockwise, Attributes
                 msp.add_arc(points[1],points[0][0],points[0][1],points[0][2],True,dxfattribs={'extrusion':points[2]})
             elif geometry_name == 'ELLIPSE':
+                # Center, Length Major Axis, Ratio from Minor Axis to Major Axis
                 msp.add_ellipse(points[0],points[1],points[2])
             elif geometry_name == 'SPLINE':
                 control_points: Iterable[Vertex] = []
-                for i in range(points[0][2]):
+                for i in range(points[0][2]): # Convert list of tuples to iterable of vertices
                     control_points.append(points[i+1])
-                if points[0][1] == 1:
+                if points[0][1] == 1:# Determine if the spline is open or closed
+                    # Control Points, Weights, Degree, Knots
                     msp.add_rational_spline(control_points,points[points[0][2]+2],points[0][0],points[points[0][2]+1])
                 else:
+                    # Control Points, Weights, Degree, Knots
                     msp.add_closed_rational_spline(control_points,points[points[0][2]+2],points[0][0],points[points[0][2]+1])
             elif geometry_name == 'LWPOLYLINE':
                 closed: bool = points[-1]
                 del points[-1]
+                # Points, Format = "xyseb" by default, Attributes
                 msp.add_lwpolyline(points,dxfattribs={'closed':closed})
             else:
                 # Throw a warning when entity is not accounted for
