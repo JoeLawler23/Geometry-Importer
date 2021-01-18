@@ -27,8 +27,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         Warning: Unknown Geometry is found
 
     Returns:
-        List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, 
-        represented in nanometers and degrees
+        List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in nanometers and degrees
 
         List of supported geometries and how they are stored
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
