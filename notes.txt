@@ -7,8 +7,8 @@ Potential Options for pre-written modules:
     2) ezdxf (https://ezdxf.mozman.at/docs/index.html) (https://github.com/mozman/ezdxf)
 
 Next Steps:
-    1) Create test file(s) for all geometries
-    2) Test all geometries
+    1) Create import csv function
+    2) Create import txt function
 
 List of all DXF geometries in ezdxf
         POINT
