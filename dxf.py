@@ -16,30 +16,30 @@ __version__ = '1.0.0'
 
 CONVESION_FACTORS: List[float] = [
     1.0,                         #0 = Unitless (NO CONVERION USED)
-    3.9370079*10**-5,            #1 = Inches
-    3.2808399*10**-6,            #2 = Feet
-    6.2137119*10**-10,           #3 = Miles
-    1.0*10**-3,                  #4 = Millimeters
-    1.0*10**-4,                  #5 = Centimeters
-    1.0*10**-6,                  #6 = Meters
-    1.0*10**-9,                  #7 = Kilometers
-    39.37007874015748,           #8 = Microinches
-    39.37007874015748*10**-3,    #9 = Mils
-    1.093613*10**-6,             #10 = Yards
-    1.0*10**4,                   #11 = Angstroms
-    1.0*10**3,                   #12 = Nanometers
-    1.0,                         #13 = Microns (CONVERTED TO)
-    1.0*10**-5,                  #14 = Decimeters
-    1.0*10**-7,                  #15 = Decameters
-    1.0*10**-8,                  #16 = Hectometers
-    1.0*10**-15,                 #17 = Gigameters
-    6.6845871226706*10**-18,     #18 = Astronomical units
-    1.0570008340246*10**-22,     #19 = Light years
-    3.2407792700054*10**-23,     #20 = Parsecs
-    3.2808399*10**-6,            #21 = US Survey Feet
-    3.9370079*10**-5,            #22 = US Survey Inch
-    1.093613*10**-6,             #23 = US Survey Yard
-    6.2137119*10**-10            #24 = US Survey Mile
+    3.9370079*10**5,            #1 = Inches
+    3.2808399*10**6,            #2 = Feet
+    6.2137119*10**10,           #3 = Miles
+    1.0*10**3,                  #4 = Millimeters
+    1.0*10**4,                  #5 = Centimeters
+    1.0*10**6,                  #6 = Meters
+    1.0*10**9,                  #7 = Kilometers
+    39.37007874015748,          #8 = Microinches
+    39.37007874015748*10**3,    #9 = Mils
+    1.093613*10**6,             #10 = Yards
+    1.0*10**4,                  #11 = Angstroms
+    1.0*10**3,                  #12 = Nanometers
+    1.0,                        #13 = Microns (CONVERTED TO)
+    1.0*10**5,                  #14 = Decimeters
+    1.0*10**7,                  #15 = Decameters
+    1.0*10**8,                  #16 = Hectometers
+    1.0*10**15,                 #17 = Gigameters
+    6.6845871226706*10**18,     #18 = Astronomical units
+    1.0570008340246*10**22,     #19 = Light years
+    3.2407792700054*10**23,     #20 = Parsecs
+    3.2808399*10**6,            #21 = US Survey Feet
+    3.9370079*10**5,            #22 = US Survey Inch
+    1.093613*10**6,             #23 = US Survey Yard
+    6.2137119*10**10            #24 = US Survey Mile
 ]
 
 UNIT_TABLE: Dict[str,int] = {
@@ -115,7 +115,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     conversion_factor: float = CONVESION_FACTORS[units]
 
     # Geometry is a single geometric entity
-    geometries: List[Dict [str, List[Tuple[[float], ...]]]] = []
+    geometries: List[Dict [str, List[Tuple[float,...]]]] = []
 
     # Cycle through all entities
     for entity_index,entity in enumerate(entities):
@@ -123,7 +123,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
         name: str = entity.DXFTYPE
 
         # Create points array for entity's points
-        points: List[Tuple[[float], ...]] = [] 
+        points: List[Tuple[float,...]] = [] 
 
         # Determine entity and get information to store
         if name == 'CIRCLE':
@@ -139,11 +139,12 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             points.append(entity.dxf.extrusion.xyz)# Plane
         elif name == 'ELLIPSE':
             points.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))# Center
-            points.append(tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]))# Length of major axis and the plane
+            points.append(tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]))# Length of major axis
             points.append(entity.dxf.ratio)# Ratio of minor to major axis
+            # NOTE fusion does not export any plane orientation information may need to look into later
         elif name == 'SPLINE':
             control_points_counter: int = 0
-            control_points: List[Tuple[[float], ...]] = [] 
+            control_points: List[Tuple[float,...]] = [] 
             for i in entity.control_points:
                  control_points.append(tuple([conversion_factor*x for x in i]))# Convert control points from vector to list of tuples
                  control_points_counter += 1
@@ -158,7 +159,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             else:
                 points.append(entity.weights)# Add the given Weights
         elif name == 'LWPOLYLINE':
-            point: Tuple[[float], ...] = []
+            point: Tuple[float,...] = []
             count: int = 0
             for i in entity.lwpoints.values: # Format points
                 if count%5 == 0 and count != 0:
@@ -223,7 +224,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
         for entity in entry:
             name: str = entity# Name of geometry
             geometry_name: str = ''.join([i for i in name if not i.isdigit()]) # Truncate name to just include the geometry
-            points: List[Tuple[[float], ...]] = entry.get(name) # List to store geometry
+            points: List[Tuple[float,...]] = entry.get(name) # List to store geometry
 
             # Add geometry in proper format
             if geometry_name == 'CIRCLE':
@@ -237,7 +238,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
                 model_space.add_arc(points[1],points[0][0],points[0][1],points[0][2],True,dxfattribs={'extrusion':points[2]})
             elif geometry_name == 'ELLIPSE':
                 # Center, Length Major Axis, Ratio from Minor Axis to Major Axis
-                model_space.add_ellipse(points[0],points[1],points[2])
+                model_space.add_ellipse(points[0],points[1],points[2],)
             elif geometry_name == 'SPLINE':
                 control_points: Iterable[Vertex] = []
                 for i in range(points[0][2]): # Convert list of tuples to iterable of vertices
@@ -270,5 +271,4 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     #end def
 
 if __name__ == "__main__":
-    geometries = import_dxf_file("Test Files/Example Geometries.dxf")
-    export_dxf_file("Test Files/Exported Example Geometries.dxf",geometries)
+    geometries = import_dxf_file("Test Files/Complex Ellipses.dxf")
