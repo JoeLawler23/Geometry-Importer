@@ -1,14 +1,6 @@
-Some helpful links to understand the file format:
-    1) Wikipedia: https://en.wikipedia.org/wiki/AutoCAD_DXF
-    2) Autodesk: http://help.autodesk.com/view/OARX/2018/ENU/?guid=GUID-235B22E0-A567-4CF6-92D3-38A2306D73F3
-
-Potential Options for pre-written modules:
-    1) dxfgrabber (https://dxfgrabber.readthedocs.io/en/latest/) ** Outdated and has been replaced by ezdxf **
-    2) ezdxf (https://ezdxf.mozman.at/docs/index.html) (https://github.com/mozman/ezdxf)
-
-Next Steps:
-    1) Create import csv function
-    2) Create import txt function
+TO-DO:
+    1) Test importing txt function
+    2) Create import csv function
 
 List of all DXF geometries in ezdxf
         POINT
@@ -30,15 +22,15 @@ List of all DXF geometries in ezdxf
         MTEXT
         HATCH
 
-Implemented Geometries:
-        LINE - DONE just need to test
+Implemented DXF Geometries:
+        LINE - DONE/TESTED
         CIRCLE - DONE/TESTED
-        ARC - DONE just need to test
-        ELLIPSE - DONE just need to test
-        LWPOLYLINE - Done just need to test
-        SPLINE - Done just need to test
+        ARC - DONE/TESTED
+        ELLIPSE - DONE/TESTED
+        LWPOLYLINE - DONE/TESTED
+        SPLINE - DONE/TESTED
 
-Notimplemented Geometries:
+Not-implemented DXF Geometries:
         POINT - ** can't create as Fusion does not save sketch points to a DXF file
         POLYLINE - ** can'test, this is an older geometry type which Fusion does not support
         3DFACE - A 3D solid filled triangle/quadrilateral ** can't create in Fusion 
