@@ -8,8 +8,8 @@ import ezdxf
 from ezdxf.document import Drawing
 from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
-
 from ezdxf.math import Vertex
+import re
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -270,5 +270,43 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
     #end def
 
+def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
+    # Import text file
+    try:
+        lines: List[str] = open(filname).readlines()
+    except FileNotFoundError as error:
+        # Reraise error
+        raise Exception('File Not Found') from error
+
+    # Create empty list for geometries and index
+    geometries: List[Dict [str, List[Tuple[float,...]]]] = []
+    geometries_index = 0
+
+    # Get conversion factor
+    conversion_factor = CONVESION_FACTORS[UNIT_TABLE[units]]
+
+    # Loop through all lines
+    for line in lines:
+        # Remove newline character
+        line = line.rstrip('\n')
+
+        # Determine if line is a valid point
+        valid_point = re.fullmatch("\d+.\d+,\d+.\d+,\d+.\d+",line)
+
+        if valid_point:
+            # Get points, convert to float, multiply by conversion factor
+            points: Tuple[float] = tuple(point*conversion_factor for point in map(float,re.findall("\d+.\d+",line)))
+            
+            # Add to geometries
+            geometries.append({'POINT'+str(geometries_index): points})
+
+            # Increase index
+            geometries_index += 1
+
+    # Return list of geometries
+    return geometries
+    #end def
+
 if __name__ == "__main__":
-    geometries = import_dxf_file("Test Files/Complex Ellipses.dxf")
+    # TESTING ONLY
+    import_txt_file("Test Files/text_geometries.txt")
