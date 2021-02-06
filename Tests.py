@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import unittest
-import dxf
+import importer
 
 class Error_Tests(unittest.TestCase):
     """Test cases that may produce errors
@@ -14,17 +14,17 @@ class Error_Tests(unittest.TestCase):
         """
         No file found import_dxf_file throws error
         """
-        self.assertRaises(Exception, lambda: dxf.import_dxf_file(""))
+        self.assertRaises(Exception, lambda: importer.import_dxf_file(""))
     def test2(self):
         """
         File missing extension import_dxf_file throws error
         """
-        self.assertRaises(Exception, lambda: dxf.export_dxf_file("Test Files/test3",None))
+        self.assertRaises(Exception, lambda: importer.export_dxf_file("Test Files/test3",None))
     def test3(self):
         """
         No passed geometry to export_dxf_file throws error
         """
-        self.assertRaises(Exception, lambda: dxf.export_dxf_file("Test Files/test3.dxf",None))
+        self.assertRaises(Exception, lambda: importer.export_dxf_file("Test Files/test3.dxf",None))
 
 class Geometry_Tests(unittest.TestCase):
     """Test cases for individual geometries
@@ -37,7 +37,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic Line only one line in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic Line.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Line.dxf")
         line = geometries[0].get('LINE0')
         self.assertEquals(line[0],(0.0,0.0,0.0))# check start point
         self.assertEquals(line[1],(50.0*10**3,0.0,0.0))# check end point
@@ -45,7 +45,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Complex lines multiple lines in 3D
         """
-        geometries = dxf.import_dxf_file("Test Files/Complex Lines.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Lines.dxf")
         lines: List[Tuple[float,...]] = []
         lines.append([(0.0,0.0,0.0),(50.0*10**3,0.0,0.0)])# Horizontal Line (0.0,0.0,0.0)mm -> (50.0,0.0,0.0)mm
         lines.append([(0.0,-25.0*10**3,0.0),(50.0*10**3,-25.0*10**3,0.0)])# Horizontal Line (0.0,-25.0,0.0)mm -> (50.0,-25.0,0.0)mm
@@ -75,7 +75,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic circle only one circle in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic Circle.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf")
         circle = geometries[0].get('CIRCLE0')
         self.assertTrue(within_a_percent(15*10**3,circle[0]))# check radius
         self.assertEquals(circle[1],(0.0,0.0,0.0))# check center
@@ -84,7 +84,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Complex circles multiple circles in 3D with various angles and positions
         """
-        geometries = dxf.import_dxf_file("Test Files/Complex Circles.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Circles.dxf")
         circles: List[Tuple[float,...]] = []
         circles.append([25*10**3,(0.0,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 0,0,0 with radius 25mm on the x-axis
         circles.append([20*10**3,(50.0*10**3,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 50,0,0 with radius 20mm on the x-axis
@@ -107,7 +107,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic Arc only one arc in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic Arc.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Arc.dxf")
         arc = geometries[0].get('ARC0')
         self.assertTrue(within_a_percent(arc[0][0],10.0*10**3))# check radius 10mm
         self.assertTrue(within_a_percent(arc[0][1],0.0))# check start angle
@@ -118,7 +118,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Complex Arcs multiple Arcs in 3D
         """
-        geometries = dxf.import_dxf_file("Test Files/Complex Arcs.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Arcs.dxf")
         arcs: List[Tuple[float,...]] = []
         arcs.append([(20.0*10**3,0.0,180.0),(0.0,0.0,0.0),(1.0,0.0,0.0)]) # Arc on x-axis
         arcs.append([(20.0*10**3,-90.0,90.0),(0.0,0.0,0.0),(0.0,0.0,1.0)]) # Arc on y-axis
@@ -136,7 +136,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic Ellipse only one ellipse in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic Ellipse.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Ellipse.dxf")
         ellipse = geometries[0].get('ELLIPSE0')
         self.assertTrue(ellipse[0],(0.0,0.0,0.0))# check center
         self.assertTrue(within_a_percent_tuple(ellipse[1],(25.0*10**3,0.0,0.0)))# Length of Major Axis 25mm
@@ -145,7 +145,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Complex Ellipsis multiple ellipses in 3D
         """
-        geometries = dxf.import_dxf_file("Test Files/Complex Ellipses.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Ellipses.dxf")
         ellipses: List[Tuple[float,...]] = []
         ellipses.append([(0.0,0.0,0.0),(25.0*10**3,0.0,0.0),0.5]) # Ellipse on x-axis
         ellipses.append([(0.0,0.0,0.0),(-25.0*10**3,0.0,0.0),0.5]) # Ellipse on y-axis
@@ -163,7 +163,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic Spline only one line in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic Spline.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Spline.dxf")
         spline = geometries[0].get('SPLINE0')
         self.assertTrue(spline[0][0],5)# Degree 5
         self.assertTrue(spline[0][1],1)# Closed true
@@ -175,7 +175,7 @@ class Geometry_Tests(unittest.TestCase):
         """
         Basic LWPolyline only one line in 2D
         """
-        geometries = dxf.import_dxf_file("Test Files/Basic LWPolyline.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic LWPolyline.dxf")
         lwpolyline = geometries[0].get('LWPOLYLINE0')
         self.assertTrue(within_a_percent_tuple(lwpolyline[0],(25.0*10**3,0.0,0.0,0.0,0.0)))# First point (25,0,0)mm
         self.assertTrue(within_a_percent_tuple(lwpolyline[1],(0.0,0.0,0.0,0.0,0.0)))# First point (25,0,0)mm
