@@ -2,13 +2,9 @@ from typing import List, Tuple
 import unittest
 import importer
 
-class Error_Tests(unittest.TestCase):
-    """Test cases that may produce errors
-
-    Args:
-        Test1: No file found import_dxf_file throws proper error
-        Test2: File missing extension import_dxf_file should not throw error
-        Test3: No passed geometry to export_dxf_file throws proper error
+class DXF_Error_Tests(unittest.TestCase):
+    """
+    Test cases that should produce errors
     """
     def test1(self):
         """
@@ -26,12 +22,9 @@ class Error_Tests(unittest.TestCase):
         """
         self.assertRaises(Exception, lambda: importer.export_dxf_file("Test Files/test3.dxf",None))
 
-class Geometry_Tests(unittest.TestCase):
-    """Test cases for individual geometries
-
-    Args:
-        Test1: Basic circle only one circle in 3D
-        Test2: Complex circles multiple circles in 3D with various angles and positions
+class DXF_Tests(unittest.TestCase):
+    """
+    Test cases for individual geometries
     """
     def test1(self):
         """
@@ -182,7 +175,55 @@ class Geometry_Tests(unittest.TestCase):
         self.assertTrue(within_a_percent_tuple(lwpolyline[2],(0.0,25.0*10**3,0.0,0.0,0.0)))# First point (25,0,0)mm
         self.assertTrue(within_a_percent_tuple(lwpolyline[3],(25.0*10**3,25.0*10**3,0.0,0.0,0.0)))# First point (25,0,0)mm
         self.assertTrue(lwpolyline[4]) # Closed true
-        
+
+class TXT_Error_Tests(unittest.TestCase):
+    """
+    Test cases that should produce errors
+    """
+    def test1(self):
+        """
+        No file found import_txt_file throws error
+        """
+        self.assertRaises(Exception, lambda: importer.import_txt_file(""))
+    def test2(self):
+        """
+        File missing extension import_dxf_file throws error
+        """
+        self.assertRaises(Exception, lambda: importer.import_txt_file("Test Files/test_geometries",None))
+
+class TXT_Tests(unittest.TestCase):
+    """
+    Tests for importing txt files
+    """
+    def test1(self):
+        """
+        One 2D point
+        """
+        geometries = importer.import_txt_file("Test Files/text_2d.txt")
+        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2))
+    def test2(self):
+        """
+        One 3D point
+        """
+        geometries = importer.import_txt_file("Test Files/text_3d.txt")
+        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
+    def test3(self):
+        """
+        Varying percision of points
+        """
+        geometries = importer.import_txt_file("Test Files/text_precision.txt")
+        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
+        self.assertEqual(geometries[0].get('POINT1'),(1.11,2.22,3.33))
+        self.assertEqual(geometries[0].get('POINT2'),(1.111,2.222,3.333))
+        self.assertEqual(geometries[0].get('POINT3'),(1.1111,2.2222,3.3333))
+    def test4(self):
+        """
+        No points
+        """
+        geometries = importer.import_txt_file("Test Files/text_no_points.txt")
+        self.assertEqual(len(geometries),0)
+
+
 def within_a_percent_tuple(tuple1: tuple[float,...], tuple2: tuple[float,...]) -> bool:
     for i in range (len(tuple1)):
         float1: float = tuple1[int(i)]
