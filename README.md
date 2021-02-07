@@ -58,7 +58,8 @@ import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[f
             Exception: Passed file name is not found
 
         Returns:
-            List[Dict [str, List[Tuple[float,...]]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 3D
+            List[Dict [str, List[Tuple[float,...]]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D
 
 import_csv_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
+
         TODO
