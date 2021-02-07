@@ -282,7 +282,7 @@ def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tup
         Exception: Passed file name is not found
 
     Returns:
-        List[Dict [str, List[Tuple[float,...]]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 3D
+        List[Dict [str, List[Tuple[float,...]]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D
     """
     # Import text file
     try:
@@ -304,9 +304,10 @@ def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tup
         line = line.rstrip('\n')
 
         # Determine if line is a valid point
-        valid_point = re.fullmatch("\d+.\d+,\d+.\d+,\d+.\d+",line)
+        valid_3d_point = re.fullmatch("\d+.\d+,\d+.\d+,\d+.\d+",line)
+        valid_2d_point = re.fullmatch("\d+.\d+,\d+.\d+",line)
 
-        if valid_point:
+        if valid_3d_point or valid_2d_point:
             # Get points, convert to float, multiply by conversion factor
             points: Tuple[float] = tuple(point*conversion_factor for point in map(float,re.findall("\d+.\d+",line)))
             
@@ -322,4 +323,4 @@ def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tup
 
 if __name__ == "__main__":
     # TESTING ONLY
-    import_txt_file("Test Files/text_geometries.txt")
+    geometries = import_txt_file("Test Files/text_3d.txt")
