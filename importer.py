@@ -10,6 +10,8 @@ from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
+import pandas as pd
+from pandas.core.frame import DataFrame
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -85,8 +87,8 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
 
         List of supported geometries and how they are stored
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [RADIUS/START ANGLE/END ANGLE(#,#,#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
+            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
@@ -127,15 +129,15 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
 
         # Determine entity and get information to store
         if name == 'CIRCLE':
-            points.append(entity.dxf.radius*conversion_factor) # Radius
             points.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))# Center
+            points.append(entity.dxf.radius*conversion_factor) # Radius
             points.append(entity.dxf.extrusion.xyz)# Plane
         elif name == 'LINE':
             points.append(tuple([conversion_factor*x for x in entity.dxf.start.xyz]))# Start point
             points.append(tuple([conversion_factor*x for x in entity.dxf.end.xyz]))# End point
         elif name == 'ARC':
-            points.append([entity.dxf.radius*conversion_factor,entity.dxf.start_angle,entity.dxf.end_angle])# Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by defaul **
             points.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))# Center
+            points.append([entity.dxf.radius*conversion_factor,entity.dxf.start_angle,entity.dxf.end_angle])# Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by defaul **
             points.append(entity.dxf.extrusion.xyz)# Plane
         elif name == 'ELLIPSE':
             points.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))# Center
@@ -193,6 +195,15 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
         scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to DXF file
         units (int, optional): [description]. Units to export DXF in, defaults 13=Microns.
 
+        List of exportable geometries:
+            List of supported geometries and the format
+            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
+            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
+            LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+
     Raises:
         Exception: No scans are passed
         Exception: No file extension is passed
@@ -229,13 +240,13 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             # Add geometry in proper format
             if geometry_name == 'CIRCLE':
                 # Center, Radius, Attributes
-                model_space.add_circle(points[1],points[0],dxfattribs={'extrusion':points[2]})
+                model_space.add_circle(points[0],points[1],dxfattribs={'extrusion':points[2]})
             elif geometry_name == 'LINE':
                 # Start point, End point
                 model_space.add_line(points[0],points[1])
             elif geometry_name == 'ARC':
                 # Center, Radius, Start Angle, End Angle, IsCounterClockwise, Attributes
-                model_space.add_arc(points[1],points[0][0],points[0][1],points[0][2],True,dxfattribs={'extrusion':points[2]})
+                model_space.add_arc(points[0],points[1][0],points[1][1],points[1][2],True,dxfattribs={'extrusion':points[2]})
             elif geometry_name == 'ELLIPSE':
                 # Center, Length Major Axis, Ratio from Minor Axis to Major Axis
                 model_space.add_ellipse(points[0],points[1],points[2],)
@@ -270,7 +281,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
     #end def
 
-def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
+def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
     """
     Imports a list of points from a textfile
 
@@ -282,11 +293,14 @@ def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tup
         Exception: Passed file name is not found
 
     Returns:
-        List[Dict [str, List[Tuple[float,...]]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D
+        List[Dict [str, List[Tuple[float,...]]]]: A list of points followed by a unique ID # and a list of associated values in 2D/3D
+
+        List of supported geometries and how they are stored
+            POINT: ('POINT#': [LOCATION (X,Y,Z)])
     """
     # Import text file
     try:
-        lines: List[str] = open(filname).readlines()
+        lines: List[str] = open(filename).readlines()
     except FileNotFoundError as error:
         # Reraise error
         raise Exception('File Not Found') from error
@@ -321,6 +335,82 @@ def import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tup
     return geometries
     #end def
 
+def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
+    """
+    Imports a formats geometries from a csv file
+
+    Args:
+        filname (str): TXT filename with path
+        units (str, optional): Units to import TXT in, defaults to Microns.
+
+    Raises:
+        Exception: Passed file name is not found
+
+     Returns:
+        List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
+
+        List of supported geometries and how they are stored
+            POINT: ('POINT#': [LOCATION (X,Y,Z)])
+            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
+            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+    """
+    # Import csv file
+    try:
+        csv: DataFrame = pd.read_csv(filename)
+    except FileNotFoundError as error:
+        # Reraise error
+        raise Exception('File Not Found') from error
+    
+    # Create empty list for geometries and index
+    geometries: List[Dict [str, List[Tuple[float,...]]]] = []
+
+    # Create points array for entry's points
+    points: List[Tuple[float,...]] = [] 
+
+    # Get conversion factor
+    conversion_factor = CONVESION_FACTORS[UNIT_TABLE[units]]
+
+    # Loop through all entries
+    for row_index in csv.index:
+
+        # Get the entry
+        row = csv.loc[row_index,:] 
+
+        # Get geometry name
+        entry_geometry_name: str = row[1].upper()
+
+        # Format arguments
+        if entry_geometry_name == 'POINT':
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # X,Y,Z
+        elif entry_geometry_name == 'LINE':
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Start point
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[3]))])) # End point
+        elif entry_geometry_name == 'CIRCLE':
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
+            points.append(tuple([(conversion_factor*float(re.findall("\d+.\d+",row[3])[0])),])) # Radius TODO assumes degrees
+        elif entry_geometry_name == 'ARC':
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
+            points.append(tuple([(conversion_factor*float(re.findall("\d+.\d+",row[3])[0])),])) # Radius
+            points.append(tuple([(float(row[4])),])) # Start Angle
+            points.append(tuple([(float(row[5])),])) # End Angle
+        elif entry_geometry_name == 'ELLIPSE':
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
+            points.append(tuple([(float(row[3])),])) # Horizontal Radius
+            points.append(tuple([(float(row[4])),])) # Vertical Radius
+        
+        # Add entry to geometries
+        geometries.append({row[0]:points}) 
+
+        # reset points array
+        points = []
+        # end if
+
+    return geometries
+    # end def
+            
 if __name__ == "__main__":
     # TESTING ONLY
-    geometries = import_txt_file("Test Files/text_3d.txt")
+    geometries = import_csv_file("Test Files/test.csv")
+    print
