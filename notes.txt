@@ -1,6 +1,7 @@
 TO-DO:
-    1) Test importing txt function
-    2) Create import csv function
+    1) Check csv importer function with Scott
+    2) Make changes to csv importer
+    2) Test import csv function
 
 List of all DXF geometries in ezdxf
         POINT
@@ -43,3 +44,10 @@ Not-implemented DXF Geometries:
         TEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         MTEXT - ** can't create as Fusion does not save text under the TEXT header but rather as a series of lines and lwpolylines
         HATCH - fills an area based on given geometries ** don't need to worry about
+
+Implemented CSV Geometries:
+        POINT - DONE
+        LINE - DONE
+        CIRCLE - DONE
+        ARC - DONE
+        ELLIPSE - DONE
