@@ -70,8 +70,8 @@ class DXF_Tests(unittest.TestCase):
         """
         geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf")
         circle = geometries[0].get('CIRCLE0')
-        self.assertTrue(within_a_percent(15*10**3,circle[0]))# check radius
-        self.assertEquals(circle[1],(0.0,0.0,0.0))# check center
+        self.assertEquals(circle[0],(0.0,0.0,0.0))# check center
+        self.assertTrue(within_a_percent(15*10**3,circle[1]))# check radius
         self.assertEquals(circle[2],(0.0,0.0,1.0))# check 3D orientation (On Z-axis)
     def test4(self):
         """
@@ -79,21 +79,21 @@ class DXF_Tests(unittest.TestCase):
         """
         geometries = importer.import_dxf_file("Test Files/Complex Circles.dxf")
         circles: List[Tuple[float,...]] = []
-        circles.append([25*10**3,(0.0,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 0,0,0 with radius 25mm on the x-axis
-        circles.append([20*10**3,(50.0*10**3,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 50,0,0 with radius 20mm on the x-axis
-        circles.append([15*10**3,(100.0*10**3,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 100,0,0 with radius 15mm on the x-axis
-        circles.append([10*10**3,(150.0*10**3,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 150,0,0 with radius 10mm on the x-axis
-        circles.append([5*10**3,(200.0*10**3,0.0,0.0),(0.0,0.0,1.0)]) # Circle at 200,0,0 with radius 5mm on the x-axis
-        circles.append([25*10**3,(0.0,50.0*10**3,50.0*10**3),(0.0,-1.0,0.0)]) # Circle at 0,50,50 with radius 25mm on the x-axis
-        circles.append([20*10**3,(50.0*10**3,50.0*10**3,50.0*10**3),(0.0,-1.0,0.0)]) # Circle at 50,50,50 with radius 20mm on the x-axis
-        circles.append([15*10**3,(100.0*10**3,50.0*10**3,50.0*10**3),(0.0,-1.0,0.0)]) # Circle at 100,50,50 with radius 15mm on the x-axis
-        circles.append([10*10**3,(150.0*10**3,50.0*10**3,50.0*10**3),(0.0,-1.0,0.0)]) # Circle at 150,50,50 with radius 10mm on the x-axis
-        circles.append([5*10**3,(200.0*10**3,50.0*10**3,50.0*10**3),(0.0,-1.0,0.0)]) # Circle at 200,50,50 with radius 5mm on the x-axis
+        circles.append([(0.0,0.0,0.0),25*10**3,(0.0,0.0,1.0)]) # Circle at 0,0,0 with radius 25mm on the x-axis
+        circles.append([(50.0*10**3,0.0,0.0),20*10**3,(0.0,0.0,1.0)]) # Circle at 50,0,0 with radius 20mm on the x-axis
+        circles.append([(100.0*10**3,0.0,0.0),15*10**3,(0.0,0.0,1.0)]) # Circle at 100,0,0 with radius 15mm on the x-axis
+        circles.append([(150.0*10**3,0.0,0.0),10*10**3,(0.0,0.0,1.0)]) # Circle at 150,0,0 with radius 10mm on the x-axis
+        circles.append([(200.0*10**3,0.0,0.0),5*10**3,(0.0,0.0,1.0)]) # Circle at 200,0,0 with radius 5mm on the x-axis
+        circles.append([(0.0,50.0*10**3,50.0*10**3),25*10**3,(0.0,-1.0,0.0)]) # Circle at 0,50,50 with radius 25mm on the x-axis
+        circles.append([(50.0*10**3,50.0*10**3,50.0*10**3),20*10**3,(0.0,-1.0,0.0)]) # Circle at 50,50,50 with radius 20mm on the x-axis
+        circles.append([(100.0*10**3,50.0*10**3,50.0*10**3),15*10**3,(0.0,-1.0,0.0)]) # Circle at 100,50,50 with radius 15mm on the x-axis
+        circles.append([(150.0*10**3,50.0*10**3,50.0*10**3),10*10**3,(0.0,-1.0,0.0)]) # Circle at 150,50,50 with radius 10mm on the x-axis
+        circles.append([(200.0*10**3,50.0*10**3,50.0*10**3),5*10**3,(0.0,-1.0,0.0)]) # Circle at 200,50,50 with radius 5mm on the x-axis
         verified_geometries: int = 0
         for geometry in geometries:
             for circle in circles:
                 geometry_values = list(geometry.values())[0]
-                if within_a_percent(circle[0],geometry_values[0]) and within_a_percent_tuple(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[2],geometry_values[2]):
+                if within_a_percent(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[0],geometry_values[0]) and within_a_percent_tuple(circle[2],geometry_values[2]):
                     verified_geometries += 1
         self.assertEquals(verified_geometries, 10)
     def test5(self):
@@ -102,10 +102,10 @@ class DXF_Tests(unittest.TestCase):
         """
         geometries = importer.import_dxf_file("Test Files/Basic Arc.dxf")
         arc = geometries[0].get('ARC0')
-        self.assertTrue(within_a_percent(arc[0][0],10.0*10**3))# check radius 10mm
-        self.assertTrue(within_a_percent(arc[0][1],0.0))# check start angle
-        self.assertTrue(within_a_percent(arc[0][2],180))# check end angle
-        self.assertTrue(arc[1],(0.0,0.0,0.0))# check center
+        self.assertTrue(arc[0],(0.0,0.0,0.0))# check center
+        self.assertTrue(within_a_percent(arc[1][0],10.0*10**3))# check radius 10mm
+        self.assertTrue(within_a_percent(arc[1][1],0.0))# check start angle
+        self.assertTrue(within_a_percent(arc[1][2],180))# check end angle
         self.assertTrue(arc[1],(1.0,0.0,0.0))# check plane
     def test6(self):
         """
@@ -113,16 +113,16 @@ class DXF_Tests(unittest.TestCase):
         """
         geometries = importer.import_dxf_file("Test Files/Complex Arcs.dxf")
         arcs: List[Tuple[float,...]] = []
-        arcs.append([(20.0*10**3,0.0,180.0),(0.0,0.0,0.0),(1.0,0.0,0.0)]) # Arc on x-axis
-        arcs.append([(20.0*10**3,-90.0,90.0),(0.0,0.0,0.0),(0.0,0.0,1.0)]) # Arc on y-axis
-        arcs.append([(20.0*10**3,0.0,180.0),(0.0,0.0,0.0),(-0.707,0.0,0.707)]) # Arc in between x-axis and y-axis
-        arcs.append([(25.0*10**3,-90.0,180.0),(0.0,-75.0*10**3,0.0),(0.0,0.0,1.0)]) # Arc on y-axis with larger angle
-        arcs.append([(20.0*10**3,-90.0,180.0),(0.0,-75.0*10**3,0.0),(0.0,0.0,1.0)]) # Arc on y-axis with larger angle and smaller radius
+        arcs.append([(0.0,0.0,0.0),(20.0*10**3,0.0,180.0),(1.0,0.0,0.0)]) # Arc on x-axis
+        arcs.append([(0.0,0.0,0.0),(20.0*10**3,-90.0,90.0),(0.0,0.0,1.0)]) # Arc on y-axis
+        arcs.append([(0.0,0.0,0.0),(20.0*10**3,0.0,180.0),(-0.707,0.0,0.707)]) # Arc in between x-axis and y-axis
+        arcs.append([(0.0,-75.0*10**3,0.0),(25.0*10**3,-90.0,180.0),(0.0,0.0,1.0)]) # Arc on y-axis with larger angle
+        arcs.append([(0.0,-75.0*10**3,0.0),(20.0*10**3,-90.0,180.0),(0.0,0.0,1.0)]) # Arc on y-axis with larger angle and smaller radius
         verified_geometries: int = 0
         for geometry in geometries:
             for arc in arcs:
                 geometry_values = list(geometry.values())[0]
-                if within_a_percent_tuple(arc[0],geometry_values[0]) and within_a_percent_tuple(arc[1],geometry_values[1]) and within_a_percent_tuple(arc[2],geometry_values[2]):
+                if within_a_percent_tuple(arc[1],geometry_values[1]) and within_a_percent_tuple(arc[0],geometry_values[0]) and within_a_percent_tuple(arc[2],geometry_values[2]):
                     verified_geometries += 1
         self.assertEquals(verified_geometries, 5)
     def test7(self):
@@ -213,16 +213,15 @@ class TXT_Tests(unittest.TestCase):
         """
         geometries = importer.import_txt_file("Test Files/text_precision.txt")
         self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
-        self.assertEqual(geometries[0].get('POINT1'),(1.11,2.22,3.33))
-        self.assertEqual(geometries[0].get('POINT2'),(1.111,2.222,3.333))
-        self.assertEqual(geometries[0].get('POINT3'),(1.1111,2.2222,3.3333))
+        self.assertEqual(geometries[1].get('POINT1'),(1.11,2.22,3.33))
+        self.assertEqual(geometries[2].get('POINT2'),(1.111,2.222,3.333))
+        self.assertEqual(geometries[3].get('POINT3'),(1.1111,2.2222,3.3333))
     def test4(self):
         """
         No points
         """
         geometries = importer.import_txt_file("Test Files/text_no_points.txt")
         self.assertEqual(len(geometries),0)
-
 
 def within_a_percent_tuple(tuple1: tuple[float,...], tuple2: tuple[float,...]) -> bool:
     for i in range (len(tuple1)):
