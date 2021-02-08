@@ -3,7 +3,7 @@ Python module that can read in a DXF,CSV,TXT file, extract basic geometric eleme
 
 Functions:
 
-- import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
+import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
 
     Summary:
         Import a DXF file and returning a list of entities
@@ -26,7 +26,7 @@ Functions:
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
 
-- export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], exportunits: str = "um") -> bool
+export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], exportunits: str = "um") -> bool
 
     Summary:
         Export/create a DXF file from a list of entities
@@ -54,7 +54,7 @@ Functions:
     Returns:
         bool: True upon successful completion
 
-- import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]
+import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]
 
     Summary:
         Imports a list of points from a textfile
@@ -72,7 +72,7 @@ Functions:
         List of supported geometries and how they are stored
             POINT: ('POINT#': [LOCATION (X,Y,Z)])
 
-- import_csv_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
+import_csv_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
 
     Summary:
         Imports and formats geometries from a csv file
