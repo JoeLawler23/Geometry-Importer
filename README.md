@@ -1,4 +1,4 @@
-# Geometries-Import
+# Geometry-Import
 Python module that can read in a DXF,CSV,TXT file, extract basic geometric elements, and output a list of each element along with the coordinates of each element and any pertinent attributes.
 
 Functions:
