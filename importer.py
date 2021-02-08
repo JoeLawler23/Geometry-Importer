@@ -73,7 +73,8 @@ UNIT_TABLE: Dict[str,int] = {
 
 def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     """
-    Importing a DXF file and returning a list of entities
+    Summary:
+        Import a DXF file and returning a list of entities
 
     Args:
         filename (str): DXF filename with path
@@ -89,7 +90,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     """
@@ -188,7 +189,8 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
 
 def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], exportunits: str = "um") -> bool:
     """
-    Exporting a DXF file from a list of entities
+    Summary:
+        Export/create a DXF file from a list of entities
 
     Args:
         filename (str): DXF filename with path
@@ -200,7 +202,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE  OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
 
@@ -283,7 +285,8 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
 def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
     """
-    Imports a list of points from a textfile
+    Summary:
+        Imports a list of points from a textfile
 
     Args:
         filname (str): TXT filename with path
@@ -337,7 +340,8 @@ def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
 
 def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
     """
-    Imports a formats geometries from a csv file
+    Summary:
+        Imports and formats geometries from a csv file
 
     Args:
         filname (str): TXT filename with path
@@ -354,7 +358,7 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
     """
     # Import csv file
     try:
@@ -397,8 +401,8 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
             points.append(tuple([(float(row[5])),])) # End Angle
         elif entry_geometry_name == 'ELLIPSE':
             points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
-            points.append(tuple([(float(row[3])),])) # Horizontal Radius
-            points.append(tuple([(float(row[4])),])) # Vertical Radius
+            points.append(tuple([(float(row[3])),0.0,0.0])) # Length of Major Axis NOTE assumed to be in the x-axis
+            points.append(tuple([(float(row[4])),])) # Ratio of Minor to Major Axis
         
         # Add entry to geometries
         geometries.append({row[0]:points}) 
@@ -412,5 +416,6 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
             
 if __name__ == "__main__":
     # TESTING ONLY
+    geometries = import_dxf_file("Test Files/Basic Ellipse.dxf")
     geometries = import_csv_file("Test Files/test.csv")
     print
