@@ -72,14 +72,33 @@ import_txt_file(filname: str, units: str = "um") -> List[Dict [str, List[Tuple[f
         List of supported geometries and how they are stored
             POINT: ('POINT#': [LOCATION (X,Y,Z)])
 
+export_txt_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
+
+    Summary:
+        Creates/Overrides a TXT file with a list of points passed
+
+    Args:
+        filename (str): TXT filename with path
+        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to TXT file
+
+        List of Exportable Geometries:
+            List of supported geometries and the format
+            POINT: #.#,#.#,#.#
+
+    Raises:
+        Warning: Unknown/Unsupported Geometry is passed
+
+    Returns:
+        bool: Returns true upon successful completion
+
 import_csv_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
 
     Summary:
         Imports and formats geometries from a csv file
 
     Args:
-        filname (str): TXT filename with path
-        units (str, optional): Units to import TXT in, defaults to Microns.
+        filname (str): CSV filename with path
+        units (str, optional): Units to import CSV in, defaults to Microns.
 
     Raises:
         Exception: Passed file name is not found
@@ -93,3 +112,26 @@ import_csv_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]
             CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+
+export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
+    
+    Summary:
+        Creates/Overrides a CSV file with a list of geometries passed
+
+    Args:
+        filename (str): CSV filename with path
+        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to CSV file
+
+        List of Exportable Geometries:
+            List of supported geometries and the format
+            POINT: ('POINT#': [LOCATION (X,Y,Z)])
+            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
+            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+
+    Raises:
+        Warning: Unknown/Unsupported Geometry is passed
+
+    Returns:
+        bool: Returns true upon successful completion
