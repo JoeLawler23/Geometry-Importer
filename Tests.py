@@ -187,7 +187,7 @@ class TXT_Error_Tests(unittest.TestCase):
         self.assertRaises(Exception, lambda: importer.import_txt_file(""))
     def test2(self):
         """
-        File missing extension import_dxf_file throws error
+        File missing extension import_txt_file throws error
         """
         self.assertRaises(Exception, lambda: importer.import_txt_file("Test Files/test_geometries",None))
 
@@ -222,6 +222,54 @@ class TXT_Tests(unittest.TestCase):
         """
         geometries = importer.import_txt_file("Test Files/text_no_points.txt")
         self.assertEqual(len(geometries),0)
+
+class CSV_Error_Tests(unittest.TestCase):
+    """
+    Test cases that should produce errors
+    """
+    def test1(self):
+        """
+        No file found import_csv_file throws error
+        """
+        self.assertRaises(Exception, lambda: importer.import_csv_file(""))
+    def test2(self):
+        """
+        File missing extension import_csv_file throws error
+        """
+        self.assertRaises(Exception, lambda: importer.import_csv_file("Test Files/test_geometries",None))
+
+class CSV_Tests(unittest.TestCase):
+    """
+    Tests for importing csv files
+    """
+
+    def test1(self):
+        """
+        General test, one of each geometry
+        """
+        geometries = importer.import_csv_file("Test Files/test.csv")
+
+        # POINT
+        self.assertEqual(geometries[0].get('POINT0')[0],(1.0,2.0,3.0))
+
+        #LINE
+        self.assertEqual(geometries[1].get('LINE1')[0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[1].get('LINE1')[1],(4.0,5.0,6.0))
+
+        #CIRCLE
+        self.assertEqual(geometries[2].get('CIRCLE2')[0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[2].get('CIRCLE2')[1],(4.0))
+
+        #ARC
+        self.assertEqual(geometries[3].get('ARC3')[0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[3].get('ARC3')[1],(4.0))
+        self.assertEqual(geometries[3].get('ARC3')[2],(5.0))
+        self.assertEqual(geometries[3].get('ARC3')[3],(6.0))
+
+        #ELLIPSE
+        self.assertEqual(geometries[4].get('ELLIPSE4')[0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[4].get('ELLIPSE4')[1],(4.0,0.0,0.0))
+        self.assertEqual(geometries[4].get('ELLIPSE4')[2],(5.0))
 
 def within_a_percent_tuple(tuple1: tuple[float,...], tuple2: tuple[float,...]) -> bool:
     for i in range (len(tuple1)):
