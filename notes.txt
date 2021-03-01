@@ -1,7 +1,5 @@
 TO-DO:
-    1) Check csv importer function with Scott
-    2) Make changes to csv importer
-    2) Test import csv function
+    1) Write tests for export txt/csv/dxf
 
 List of all DXF geometries in ezdxf
         POINT
