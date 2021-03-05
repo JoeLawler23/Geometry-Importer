@@ -10,7 +10,6 @@ from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
-from numpy import row_stack
 import pandas as pd
 from pandas.core.frame import DataFrame
 
