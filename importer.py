@@ -1,5 +1,5 @@
 """
-Module for importing and exporting DXF files based off of ezdxf
+Module for importing and exporting DXF/CSV/TXT files
 """
 
 from logging import warning
