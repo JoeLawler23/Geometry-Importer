@@ -1,0 +1,16 @@
+https://ezdxf.mozman.at/docs/addons/text2path.html?highlight=text#module-ezdxf.addons.text2path
+https://ezdxf.mozman.at/docs/develop/fonts.html?highlight=fontface#ezdxf.tools.fonts.FontFace
+https://ezdxf.readthedocs.io/en/stable/math.html#ocs-class
+https://ezdxf.readthedocs.io/en/master/render/path.html?highlight=path#path
+https://ezdxf.mozman.at/docs/addons/drawing.html#module-ezdxf.addons.drawing
+
+# Start by making basic alphanumeric outlines Dictionary for letter/number and points (Blockletter)
+# Add basic punctuation (How should I deal with points? POINT)
+# Add scalability as a size param no units seperate horizontal and vertical scale factor
+# Add spaces as fixed size param
+# Account for characaters that are not in default
+# Default data inside program read in from file for custom letters/strings
+# Break up complex geometries into small lines (quality param either min length or number of segments or default break based on length)
+# Add into geometry importer repo
+# Try demo mode for Autolaze
+
