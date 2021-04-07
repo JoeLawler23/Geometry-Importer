@@ -13,4 +13,3 @@ https://ezdxf.mozman.at/docs/addons/drawing.html#module-ezdxf.addons.drawing
 # Break up complex geometries into small lines (quality param either min length or number of segments or default break based on length)
 # Add into geometry importer repo
 # Try demo mode for Autolaze
-
