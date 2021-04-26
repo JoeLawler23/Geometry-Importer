@@ -1,6 +1,6 @@
-"""
+'''
 Module for importing and exporting DXF/CSV/TXT files
-"""
+'''
 
 from logging import warning
 from typing import Dict, Iterable, List, Tuple
@@ -45,34 +45,34 @@ CONVESION_FACTORS: List[float] = [
 ]
 
 UNIT_TABLE: Dict[str,int] = {
-    "in":1,     #Inches
-    "ft":2,     #Feet
-    "mi":3,     #Miles
-    "mm":4,     #Milimeters
-    "cm":5,     #Centimeters
-    "m":6,      #Meters
-    "km":7,     #Kilometers
-    "ui":8,     #Microinches
-    "mil":9,    #Mils
-    "yd":10,    #Yards
-    "a":11,     #Angstroms
-    "nm":12,    #Nanometers
-    "um":13,    #Microns
-    "dm":14,    #Decimeters
-    "dam":15,   #Decameters
-    "hm":16,    #Hectometers
-    "gm":17,    #Gigameters
-    "au":18,    #Astronomical units
-    "ly":19,    #Light years
-    "pc":20,    #Parsecs
-    "usft":22,  #US Survey Feet
-    "usin":23,  #US Survey Inch
-    "usyd":24,  #US Survey Yard
-    "usmi":25   #US Survey Mile
+    'in':1,     #Inches
+    'ft':2,     #Feet
+    'mi':3,     #Miles
+    'mm':4,     #Milimeters
+    'cm':5,     #Centimeters
+    'm':6,      #Meters
+    'km':7,     #Kilometers
+    'ui':8,     #Microinches
+    'mil':9,    #Mils
+    'yd':10,    #Yards
+    'a':11,     #Angstroms
+    'nm':12,    #Nanometers
+    'um':13,    #Microns
+    'dm':14,    #Decimeters
+    'dam':15,   #Decameters
+    'hm':16,    #Hectometers
+    'gm':17,    #Gigameters
+    'au':18,    #Astronomical units
+    'ly':19,    #Light years
+    'pc':20,    #Parsecs
+    'usft':22,  #US Survey Feet
+    'usin':23,  #US Survey Inch
+    'usyd':24,  #US Survey Yard
+    'usmi':25   #US Survey Mile
 }
 
 def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
-    """
+    '''
     Summary:
         Import a DXF file and returning a list of entities
 
@@ -93,20 +93,17 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
-    """
+    '''
 
     # Import file
     try:
         dxf_drawing: Drawing = ezdxf.readfile(filename)
-    except IOError as error:
+    except OSError as error:
         # Reraise error
-        raise Exception('Invalid/Corrupt DXF File') from error
-    except FileNotFoundError as error:
-        # Reraise error
-        raise Exception('File Not Found') from error
-    except ezdxf.DXFStructureError and ezdxf.UnicodeDecodeError:
+        raise Exception('Invalid/Corrupt/Missing DXF File') from error
+    except ezdxf.DXFStructureError:
         # Catch errors
-        warning("Invalid/Corrupted DXF Structures")
+        warning('Invalid/Corrupted DXF Structures')
         return None
 
     # Get all entities from dxf
@@ -177,7 +174,7 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
             points.append(entity.closed) # Add boolean for whether or not the polyline is closed
         else:
             # Throw a warning when entity is not accounted for
-            warning("UNKNOWN GEOMETRY: "+name)
+            warning('UNKNOWN GEOMETRY: '+name)
         #end if
         
         # Add entity name and corresponding points to array
@@ -187,8 +184,8 @@ def import_dxf_file(filename: str) -> List[Dict [str, List[Tuple[float,...]]]]:
     return geometries
     #end def
 
-def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], exportunits: str = "um") -> bool:
-    """
+def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]], exportunits: str = 'um') -> bool:
+    '''
     Summary:
         Export/create a DXF file from a list of entities
 
@@ -214,7 +211,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
     Returns:
         bool: True upon successful completion
-    """
+    '''
 
     # Create DXF file with given filename
     dxf_drawing: Drawing = ezdxf.new('R2010')
@@ -223,7 +220,7 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     if exportunits in UNIT_TABLE:
         dxf_drawing.units = UNIT_TABLE[exportunits] #Set units to passed units
     else:
-        raise Exception("Invalid Units {}", exportunits) from None
+        raise Exception('Invalid Units {}', exportunits) from None
 
     # Get modelspace
     model_space: Modelspace = dxf_drawing.modelspace()
@@ -265,16 +262,16 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             elif geometry_name == 'LWPOLYLINE':
                 closed: bool = points[-1]
                 del points[-1]
-                # Points, Format = "xyseb" by default, Attributes
+                # Points, Format = 'xyseb' by default, Attributes
                 model_space.add_lwpolyline(points,dxfattribs={'closed':closed})
             else:
                 # Throw a warning when entity is not accounted for
-                warning("UNKNOWN GEOMETRY: "+geometry_name)
+                warning('UNKNOWN GEOMETRY: '+geometry_name)
             #end if
 
     # Catch filename with no extension and raise an error
-    if not filename.endswith(".dxf"):
-        raise Exception("Filename does not contain extension")
+    if not filename.endswith('.dxf'):
+        raise Exception('Filename does not contain extension')
 
     # Save DXF file
     dxf_drawing.saveas(filename)
@@ -283,8 +280,8 @@ def export_dxf_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     return True
     #end def
 
-def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
-    """
+def import_txt_file(filename: str, units: str = 'um') -> List[Dict [str, List[Tuple[float,...]]]]:
+    '''
     Summary:
         Imports a list of points from a textfile
 
@@ -300,7 +297,7 @@ def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
 
         List of supported geometries and how they are stored
             POINT: ('POINT#': [LOCATION (X,Y,Z)])
-    """
+    '''
     # Import text file
     try:
         lines: List[str] = open(filename).readlines()
@@ -321,12 +318,12 @@ def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
         line = line.rstrip('\n')
 
         # Determine if line is a valid point
-        valid_3d_point = re.fullmatch("\d+.\d+,\d+.\d+,\d+.\d+",line)
-        valid_2d_point = re.fullmatch("\d+.\d+,\d+.\d+",line)
+        valid_3d_point = re.fullmatch(r'\d+.\d+,\d+.\d+,\d+.\d+',line)
+        valid_2d_point = re.fullmatch(r'\d+.\d+,\d+.\d+',line)
 
         if valid_3d_point or valid_2d_point:
             # Get points, convert to float, multiply by conversion factor
-            points: Tuple[float] = tuple(point*conversion_factor for point in map(float,re.findall("\d+.\d+",line)))
+            points: Tuple[float] = tuple(point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',line)))
             
             # Add to geometries
             geometries.append({'POINT'+str(geometries_index): points})
@@ -339,7 +336,7 @@ def import_txt_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
     #end def
 
 def export_txt_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
-    """
+    '''
     Summary:
         Creates/Overrides a TXT file with a list of points passed
 
@@ -356,10 +353,10 @@ def export_txt_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
     Returns:
         bool: Returns true upon successful completion
-    """
+    '''
     # Create a new textfile if one does not already exist
     # NOTE will override existing files with the same name
-    text_file = open(filename,"w+")
+    text_file = open(filename,'w+')
 
     # Cycle through every geometry from the scans list
     for entry in scans:
@@ -367,22 +364,22 @@ def export_txt_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
             # Get the point's x,y,(z)
             point = entry.get(entity)
-            output:str = ""
+            output:str = ''
 
-            if entity[0:-1].lower() == "point":
+            if entity[0:-1].lower() == 'point':
                 # Generate formatted string based on point
                 output = str(point[0])[1:-1]
             else:
-                warning("Unsupported geometry")  
+                warning('Unsupported geometry')  
 
             # Write to text file with newline
-            text_file.write(output+"\n")
+            text_file.write(output+'\n')
 
     # Return true upon successful completion
     return True
 
-def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tuple[float,...]]]]:
-    """
+def import_csv_file(filename: str, units: str = 'um') -> List[Dict [str, List[Tuple[float,...]]]]:
+    '''
     Summary:
         Imports and formats geometries from a csv file
 
@@ -402,7 +399,7 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
             CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-    """
+    '''
     # Import csv file
     try:
         csv: DataFrame = pd.read_csv(filename)
@@ -430,20 +427,20 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
 
         # Format arguments
         if entry_geometry_name == 'POINT':
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # X,Y,Z
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[2]))])) # X,Y,Z
         elif entry_geometry_name == 'LINE':
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Start point
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[3]))])) # End point
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[2]))])) # Start point
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[3]))])) # End point
         elif entry_geometry_name == 'CIRCLE':
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
-            points.append((conversion_factor*float(re.findall("\d+.\d+",row[3])[0]))) # Radius TODO assumes degrees
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[2]))])) # Center
+            points.append((conversion_factor*float(re.findall(r'\d+.\d+',row[3])[0]))) # Radius TODO assumes degrees
         elif entry_geometry_name == 'ARC':
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
-            points.append((conversion_factor*float(re.findall("\d+.\d+",row[3])[0]))) # Radius
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[2]))])) # Center
+            points.append((conversion_factor*float(re.findall(r'\d+.\d+',row[3])[0]))) # Radius
             points.append((float(row[4]))) # Start Angle
             points.append((float(row[5]))) # End Angle
         elif entry_geometry_name == 'ELLIPSE':
-            points.append(tuple([point*conversion_factor for point in map(float,re.findall("\d+.\d+",row[2]))])) # Center
+            points.append(tuple([point*conversion_factor for point in map(float,re.findall(r'\d+.\d+',row[2]))])) # Center
             points.append(tuple([(float(row[3])),0.0,0.0])) # Length of Major Axis NOTE assumed to be in the x-axis
             points.append((float(row[4]))) # Ratio of Minor to Major Axis
         
@@ -458,7 +455,7 @@ def import_csv_file(filename: str, units: str = "um") -> List[Dict [str, List[Tu
     # end def
             
 def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) -> bool:
-    """
+    '''
     Summary:
         Creates/Overrides a CSV file with a list of geometries passed
 
@@ -479,7 +476,7 @@ def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
 
     Returns:
         bool: Returns true upon successful completion
-    """
+    '''
     # NOTE will override existing files with the same name
     # Create a dataframe
     output_table:DataFrame = pd.DataFrame(columns=['name','scantype','arg1','arg2','arg3','arg4'])
@@ -500,20 +497,20 @@ def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
             args = entry.get(entity)
 
             # Format according to geometry
-            if scantype=="point":
+            if scantype=='point':
                 # Add x,y,z coordinate
                 row[2] = str(args[0])[1:-1]
-            elif scantype=="line":
+            elif scantype=='line':
                 # Add start point
                 row[2] = str(args[0])[1:-1]
                 # Add end point
                 row[3] = str(args[1])[1:-1]
-            elif scantype=="circle":
+            elif scantype=='circle':
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add radius
                 row[3] = args[1][0]
-            elif scantype=="arc":
+            elif scantype=='arc':
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add radius
@@ -522,7 +519,7 @@ def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
                 row[4] = args[2][0]
                 # Add end angle
                 row[5] = args[3][0]
-            elif scantype=="ellipse":
+            elif scantype=='ellipse':
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add length of major axis
@@ -530,7 +527,7 @@ def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
                 # Add ratio of minor to major
                 row[4] = args[2][0]  
             else:
-                warning("Unsupported geometry")  
+                warning('Unsupported geometry')  
 
             # Add row to the table
             output_table = output_table.append(pd.Series(row,index=output_table.columns),ignore_index=True)
@@ -541,6 +538,6 @@ def export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]
     # Return true upon successful
     return True
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # TESTING ONLY
     print
