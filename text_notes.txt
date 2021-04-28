@@ -4,7 +4,6 @@ https://ezdxf.readthedocs.io/en/stable/math.html#ocs-class
 https://ezdxf.readthedocs.io/en/master/render/path.html?highlight=path#path
 https://ezdxf.mozman.at/docs/addons/drawing.html#module-ezdxf.addons.drawing
 
-# Start by making basic alphanumeric outlines Dictionary for letter/number and points (Blockletter)
 # Add basic punctuation (How should I deal with points? POINT)
 # Add scalability as a size param no units seperate horizontal and vertical scale factor
 # Add spaces as fixed size param
