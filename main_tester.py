@@ -1,5 +1,5 @@
 import importer
-import text
+import alphabet_to_line
 import geometry_to_line
 
 if __name__ == '__main__':
