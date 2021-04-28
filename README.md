@@ -1,4 +1,7 @@
 # Geometry-Import
+
+Importer:
+
 Python module that can read in a DXF,CSV,TXT files, extract basic geometric elements, and output a list of each element along with the coordinates of each element and any pertinent attributes.
 
 Functions:
@@ -135,3 +138,36 @@ export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) 
 
     Returns:
         bool: Returns true upon successful completion
+
+
+Text:
+
+Create an alphabet of letters in which each letter is a collection of lines.
+Letter DXF files are in the Letters folder
+
+Functions:
+
+def create_letter_from_dxf(letter: str, scans: List[Dict[str, List[Tuple[float, ...]]]]):
+
+    Generate a list of lines from a DXF file representing a letter made only from lines
+
+    Accepted Geometries: * All other geometries are ignored *
+    - Point
+    - Line
+    - LWPolyline
+
+    Args:
+        letter (str): filename
+        scans (List[Dict[str, List[Tuple[float, ...]]]]): letter geometries from importing the dxf file
+
+def create_alphabet():
+    Print out a list of all dxf files, letters only drawn from lines, in the Letters folder
+
+
+Geometry To Line:
+
+Convert any geometry to a series of lines and points
+
+Functions:
+
+
