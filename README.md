@@ -140,10 +140,10 @@ export_csv_file(filename: str, scans: List[Dict [str, List[Tuple[float,...]]]]) 
         bool: Returns true upon successful completion
 
 
-Text:
+Alphabet To Line:
 
-Create an alphabet of letters in which each letter is a collection of lines.
-Letter DXF files are in the Letters folder
+Create an alphabet of letters and numbers in which each letter/numbers is a collection of lines.
+Letter/Number DXF files are in the Letters folder
 
 Functions:
 
