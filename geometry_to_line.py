@@ -1,9 +1,11 @@
 
+from importer import CONVESION_FACTORS,UNIT_TABLE
 from typing import Dict, List, Tuple
 import math
 
-def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, min_length: float = 0) -> List[Dict[str, List[Tuple[float, ...]]]]:
-    
+def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, min_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+    # Will default to using min_length if both params are specified
+
     # Get values
     values = list(scans[0].values())[0]
     center: float = values[0]
@@ -30,22 +32,26 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
         # Create lines based on number of segments desired
         # Generate number of angles based off of num segments desired
 
-        # Calc segment angle
+        # Calc segment angle based on num_segments
         segment_angle = degree/(num_segments)
+    
+    elif min_length > 0:
+        # Calc segment angle based on min_length
+        conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
+        segment_angle = (math.sin(((min_length*conversion_factor)/2)/radius))/2
 
-        # For each point on the circle
-        for i in range(0,num_segments+1):
-            angle = start_angle + (segment_angle * i) # Calc point's angle
-            x = radius*math.cos(math.radians(angle)) # Convert to cartesian
-            y = radius*math.sin(math.radians(angle)) # Convert to cartesian
-            points.append([x+center[0],y+center[1],center[2]]) # Add center offset
-        
-        for i in range(0,num_segments):
-            lines.append({'LINE'+str(i) : [points[i],points[i+1]]})
+        num_segments = int(degree/segment_angle)
 
-    elif min_length != 0:
-        # Create lines based on the length desired
-        print
+    # For each point on the circle
+    for i in range(0,num_segments+1):
+        angle = start_angle + (segment_angle * i) # Calc point's angle
+        x = radius*math.cos(math.radians(angle)) # Convert to cartesian
+        y = radius*math.sin(math.radians(angle)) # Convert to cartesian
+        points.append([x+center[0],y+center[1],center[2]]) # Add center offset
+
+    # Make each point into a line
+    for i in range(0,num_segments):
+        lines.append({'LINE'+str(i) : [points[i],points[i+1]]})
 
     return lines
 
