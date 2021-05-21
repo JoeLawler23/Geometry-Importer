@@ -1,6 +1,5 @@
 TO-DO:
     1) Write tests for export txt/csv/dxf
-    2) Use another library instead of pandas
 
 List of all DXF geometries in ezdxf
         POINT
