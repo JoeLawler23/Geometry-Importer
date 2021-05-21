@@ -10,8 +10,7 @@ from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
-import pandas as pd
-from pandas.core.frame import DataFrame
+import csv
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -433,7 +432,7 @@ def import_csv_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tup
     '''
     # Import csv file
     try:
-        csv: DataFrame = pd.read_csv(filename)
+        imported_csv: csv = csv.reader(open(filename,newline=''), delimiter=',')
     except FileNotFoundError as error:
         # Reraise error
         raise Exception('File Not Found') from error
@@ -447,11 +446,11 @@ def import_csv_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tup
     # Get conversion factor
     conversion_factor = CONVESION_FACTORS[UNIT_TABLE[units]]
 
-    # Loop through all entries
-    for row_index in csv.index:
+    # Skip first line
+    next(imported_csv)
 
-        # Get the entry
-        row = csv.loc[row_index, :]
+    # Loop through all entries
+    for row in imported_csv:
 
         # Get geometry name
         entry_geometry_name: str = row[1].upper()
@@ -520,9 +519,9 @@ def export_csv_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
         bool: Returns true upon successful completion
     '''
     # NOTE will override existing files with the same name
-    # Create a dataframe
-    output_table: DataFrame = pd.DataFrame(
-        columns=['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
+    # Create a csv file if not already created
+    output_table: csv = csv.writer(open(filename,'w', newline=''),delimiter=',')
+    output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
 
     # Cycle through every geometry from the scans list
     for entry in scans:
@@ -553,32 +552,28 @@ def export_csv_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add radius
-                row[3] = args[1][0]
+                row[3] = args[1]
             elif scantype == 'arc':
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add radius
-                row[3] = args[1][0]
+                row[3] = args[1]
                 # Add start angle
-                row[4] = args[2][0]
+                row[4] = args[2]
                 # Add end angle
-                row[5] = args[3][0]
+                row[5] = args[3]
             elif scantype == 'ellipse':
                 # Add center point
                 row[2] = str(args[0])[1:-1]
                 # Add length of major axis
                 row[3] = str(args[1])[1:-1]
                 # Add ratio of minor to major
-                row[4] = args[2][0]
+                row[4] = args[2]
             else:
                 warning('Unsupported geometry')
 
             # Add row to the table
-            output_table = output_table.append(
-                pd.Series(row, index=output_table.columns), ignore_index=True)
-
-    # Create the csv file
-    output_table.to_csv(filename, mode='w', index=False)
+            output_table.writerow(row)
 
     # Return true upon successful
     return True
