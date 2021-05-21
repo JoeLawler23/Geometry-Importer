@@ -11,3 +11,5 @@ __pycache__/geometry_to_line.cpython-39.pyc
 .gitignore
 .gitignore
 __pycache__/text.cpython-39.pyc
+__pycache__/alphabet_to_line.cpython-39.pyc
+__pycache__/main_tester.cpython-39.pyc
