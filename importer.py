@@ -11,6 +11,7 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
 import csv
+import geometry_to_line
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -71,13 +72,15 @@ UNIT_TABLE: Dict[str, int] = {
 }
 
 
-def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Import a DXF file and returning a list of entities
 
     Args:
         filename (str): DXF filename with path
+        geometry_filter (Tuple[str]): A list of accepted geometries to output
+        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
 
     Raises:
         Exception: Passed file name is not found, corrupt, or not a DXF file
@@ -86,10 +89,10 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     Returns:
         List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
 
-        List of supported geometries and how they are stored
+        List of supported geometries and their associated values
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)]) NOTE this includes circles
+            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)]) # TODO remove
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
@@ -114,7 +117,7 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     units: int = dxf_drawing.units
     conversion_factor: float = CONVESION_FACTORS[units]
 
-    # Geometry is a single geometric entity
+    # Create empty list of geometries
     geometries: List[Dict[str, List[Tuple[float, ...]]]] = []
 
     # Cycle through all entities
@@ -122,36 +125,53 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
         # Entity name
         name: str = entity.DXFTYPE
 
-        # Create points array for entity's points
-        points: List[Tuple[float, ...]] = []
+        # Create values array for an entity's specified values
+        # Create temp_values array for entity's that have to be converted
+        values: List[Tuple[float, ...]] = []
+        temp_values: List[Tuple[float, ...]] = []
 
-        # Determine entity and get information to store
-        if name == 'CIRCLE':
-            points.append(
-                tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
-            points.append(entity.dxf.radius*conversion_factor)  # Radius
-            points.append(entity.dxf.extrusion.xyz)  # Plane
-        elif name == 'LINE':
+        # # Determine entity and get information to store
+        # # Add a geometry if it's part of the filter OR Add a converted version of that geometry
+        # if name == 'CIRCLE' and (geometry_filter.__contains__('CIRCLE') or convert):
+            
+        #     # Create circle type from DXF file
+        #     circle: List[Tuple[float, ...]] = [tuple([conversion_factor*x for x in entity.dxf.center.xyz]),entity.dxf.radius*conversion_factor,entity.dxf.extrusion.xyz]
+            
+        #     # values.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
+        #     # values.append(entity.dxf.radius*conversion_factor)  # Radius
+        #     # values.append(entity.dxf.extrusion.xyz)  # Plane
+            
+        #     # Convert geometry if geometry filter does not contain it
+        #     if convert and not(geometry_filter.__contains__('CIRCLE')):
+        #         # convert to arcs
+        #         # convert to lines
+        #         print
+
+        #     values = circle
+
+        if name == 'LINE':
             # Start point
-            points.append(
+            values.append(
                 tuple([conversion_factor*x for x in entity.dxf.start.xyz]))
             # End point
-            points.append(
+            values.append(
                 tuple([conversion_factor*x for x in entity.dxf.end.xyz]))
-        elif name == 'ARC':
-            points.append(
-                tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
-            # Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by defaul **
-            points.append([entity.dxf.radius*conversion_factor,
-                          entity.dxf.start_angle, entity.dxf.end_angle])
-            points.append(entity.dxf.extrusion.xyz)  # Plane
+        elif name == 'ARC' or name == 'CIRCLE':
+            values.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
+            if name == 'ARC':
+                # Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by default **
+                values.append([entity.dxf.radius*conversion_factor, entity.dxf.start_angle, entity.dxf.end_angle])
+            else:
+                # Radius, 0, 360 NOTE circle entities don't contain angle measurments
+                values.append([entity.dxf.radius*conversion_factor, 0, 360])
+            values.append(entity.dxf.extrusion.xyz)  # Plane
         elif name == 'ELLIPSE':
-            points.append(
+            values.append(
                 tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
             # Length of major axis
-            points.append(
+            values.append(
                 tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]))
-            points.append(entity.dxf.ratio)  # Ratio of minor to major axis
+            values.append(entity.dxf.ratio)  # Ratio of minor to major axis
             # NOTE fusion does not export any plane orientation information may need to look into later
         elif name == 'SPLINE':
             control_points_counter: int = 0
@@ -161,40 +181,40 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
                 control_points.append(tuple([conversion_factor*x for x in i]))
                 control_points_counter += 1
             # Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
-            points.append(
+            values.append(
                 [entity.dxf.degree, entity.CLOSED, control_points_counter])
             # Add control points to end of points list
-            points[1:1] = control_points
-            points.append(entity.knots)  # Knots
+            values[1:1] = control_points
+            values.append(entity.knots)  # Knots
             if len(entity.weights) == 0:
                 weights: List[float] = []
                 for i in range(len(entity.control_points)):
                     weights.append(1.0)
-                points.append(weights)  # Add an array of 1.0's
+                values.append(weights)  # Add an array of 1.0's
             else:
-                points.append(entity.weights)  # Add the given Weights
+                values.append(entity.weights)  # Add the given Weights
         elif name == 'LWPOLYLINE':
             point: Tuple[float, ...] = []
             count: int = 0
             for i in entity.lwpoints.values:  # Format points
                 if count % 5 == 0 and count != 0:
-                    points.append(point)
+                    values.append(point)
                     point = []
                 point.append(i)
                 count += 1
-            points.append(point)
-            for point in points:  # Convert first 2 points
+            values.append(point)
+            for point in values:  # Convert first 2 points
                 point[0] *= conversion_factor
                 point[1] *= conversion_factor
             # Add boolean for whether or not the polyline is closed
-            points.append(entity.closed)
+            values.append(entity.closed)
         else:
             # Throw a warning when entity is not accounted for
             warning('UNKNOWN GEOMETRY: '+name)
         # end if
 
         # Add entity name and corresponding points to array
-        geometries.append({name+str(entity_index): points})
+        geometries.append({name+str(entity_index): values})
 
     # Return array of all geometries
     return geometries
@@ -307,13 +327,15 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     # end def
 
 
-def import_txt_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_txt_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports a list of points from a textfile
 
     Args:
         filname (str): TXT filename with path
+        geometry_filter (Tuple[str]): A list of accepted geometries to output
+        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
         units (str, optional): Units to import TXT in, defaults to Microns.
 
     Raises:
@@ -408,13 +430,15 @@ def export_txt_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     return True
 
 
-def import_csv_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_csv_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports and formats geometries from a csv file
 
     Args:
         filname (str): CSV filename with path
+        geometry_filter (Tuple[str]): A list of accepted geometries to output
+        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
         units (str, optional): Units to import CSV in, defaults to Microns.
 
     Raises:
@@ -432,7 +456,8 @@ def import_csv_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tup
     '''
     # Import csv file
     try:
-        imported_csv: csv = csv.reader(open(filename,newline=''), delimiter=',')
+        imported_csv: csv = csv.reader(
+            open(filename, newline=''), delimiter=',')
     except FileNotFoundError as error:
         # Reraise error
         raise Exception('File Not Found') from error
@@ -520,7 +545,8 @@ def export_csv_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     '''
     # NOTE will override existing files with the same name
     # Create a csv file if not already created
-    output_table: csv = csv.writer(open(filename,'w', newline=''),delimiter=',')
+    output_table: csv = csv.writer(
+        open(filename, 'w', newline=''), delimiter=',')
     output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
 
     # Cycle through every geometry from the scans list
@@ -577,3 +603,43 @@ def export_csv_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
 
     # Return true upon successful
     return True
+
+
+def import_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+    '''
+    Wrapper function for importing all filetypes
+
+    Args:
+        filname (str): Filename with path
+        geometry_filter (Tuple[str]): A list of accepted geometries to output
+        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
+        units (str, optional): Units to import in, defaults to Microns.
+
+    Raises:
+        Exception: Unknown filetype
+
+    Returns:
+        List[Dict[str, List[Tuple[float, ...]]]]: List of geometries
+    '''
+
+    # Get file extension
+    file_type: str = filename.split('.')[1].upper()
+
+    # Run appropriate function
+    # DXF file
+    if (file_type == "DXF"):
+        return import_dxf_file(filename, geometry_filter, convert)
+
+    # CSV file
+    elif (file_type == "CSV"):
+        return import_csv_file(filename, geometry_filter, convert, units)
+
+    # TXT file
+    elif (file_type == "TXT"):
+        return import_txt_file(filename, geometry_filter, convert, units)
+
+    else:
+        # Unknown filetype
+        raise Exception('Filetype Unknown')
+        # end if
+    # end def
