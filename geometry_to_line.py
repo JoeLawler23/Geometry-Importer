@@ -1,10 +1,10 @@
 
-from importer import CONVESION_FACTORS,UNIT_TABLE
 from typing import Dict, List, Tuple
 import math
 
 def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, min_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     # Will default to using min_length if both params are specified
+    # Units passed will be treated as nanometers
 
     # Get values
     values = list(scans[0].values())[0]
@@ -28,17 +28,19 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
     # Points 
     points: List[Tuple[float, ...]] = []
 
-    if num_segments > 2:
+    # Use number of segments by default if no param is passed
+    if num_segments > 2 or min_length == 0:
         # Create lines based on number of segments desired
         # Generate number of angles based off of num segments desired
 
         # Calc segment angle based on num_segments
         segment_angle = degree/(num_segments)
     
+    # TODO need to fix
     elif min_length > 0:
         # Calc segment angle based on min_length
-        conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
-        segment_angle = (math.sin(((min_length*conversion_factor)/2)/radius))/2
+        # conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
+        segment_angle = (math.sin(((min_length*1)/2)/radius))/2
 
         num_segments = int(degree/segment_angle)
 
@@ -63,3 +65,6 @@ def circle_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 # def lwpolyline_to_lines():
 
 # def spline_to_lines():
+
+def circle_to_arc():
+    print
