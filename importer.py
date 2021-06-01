@@ -92,7 +92,6 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -
         List of supported geometries and their associated values
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)]) NOTE this includes circles
-            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)]) # TODO remove
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
@@ -129,26 +128,7 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -
         # Create temp_values array for entity's that have to be converted
         values: List[Tuple[float, ...]] = []
         temp_values: List[Tuple[float, ...]] = []
-
-        # # Determine entity and get information to store
-        # # Add a geometry if it's part of the filter OR Add a converted version of that geometry
-        # if name == 'CIRCLE' and (geometry_filter.__contains__('CIRCLE') or convert):
-            
-        #     # Create circle type from DXF file
-        #     circle: List[Tuple[float, ...]] = [tuple([conversion_factor*x for x in entity.dxf.center.xyz]),entity.dxf.radius*conversion_factor,entity.dxf.extrusion.xyz]
-            
-        #     # values.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
-        #     # values.append(entity.dxf.radius*conversion_factor)  # Radius
-        #     # values.append(entity.dxf.extrusion.xyz)  # Plane
-            
-        #     # Convert geometry if geometry filter does not contain it
-        #     if convert and not(geometry_filter.__contains__('CIRCLE')):
-        #         # convert to arcs
-        #         # convert to lines
-        #         print
-
-        #     values = circle
-
+        
         if name == 'LINE':
             # Start point
             values.append(
