@@ -30,7 +30,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Basic Line only one line in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic Line.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Line.dxf",[],True)
         line = geometries[0].get('LINE0')
         self.assertEquals(line[0],(0.0,0.0,0.0))# check start point
         self.assertEquals(line[1],(50.0*10**3,0.0,0.0))# check end point
@@ -38,7 +38,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Complex lines multiple lines in 3D
         """
-        geometries = importer.import_dxf_file("Test Files/Complex Lines.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Lines.dxf",[],True)
         lines: List[Tuple[float,...]] = []
         lines.append([(0.0,0.0,0.0),(50.0*10**3,0.0,0.0)])# Horizontal Line (0.0,0.0,0.0)mm -> (50.0,0.0,0.0)mm
         lines.append([(0.0,-25.0*10**3,0.0),(50.0*10**3,-25.0*10**3,0.0)])# Horizontal Line (0.0,-25.0,0.0)mm -> (50.0,-25.0,0.0)mm
@@ -68,39 +68,39 @@ class DXF_Tests(unittest.TestCase):
         """
         Basic circle only one circle in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf",[],True)
         circle = geometries[0].get('CIRCLE0')
         self.assertEquals(circle[0],(0.0,0.0,0.0))# check center
-        self.assertTrue(within_a_percent(15*10**3,circle[1]))# check radius
+        self.assertTrue(within_a_percent_tuple([15*10**3,0.0,360.0],circle[1]))# check radius
         self.assertEquals(circle[2],(0.0,0.0,1.0))# check 3D orientation (On Z-axis)
     def test4(self):
         """
         Complex circles multiple circles in 3D with various angles and positions
         """
-        geometries = importer.import_dxf_file("Test Files/Complex Circles.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Circles.dxf",[],True)
         circles: List[Tuple[float,...]] = []
-        circles.append([(0.0,0.0,0.0),25*10**3,(0.0,0.0,1.0)]) # Circle at 0,0,0 with radius 25mm on the x-axis
-        circles.append([(50.0*10**3,0.0,0.0),20*10**3,(0.0,0.0,1.0)]) # Circle at 50,0,0 with radius 20mm on the x-axis
-        circles.append([(100.0*10**3,0.0,0.0),15*10**3,(0.0,0.0,1.0)]) # Circle at 100,0,0 with radius 15mm on the x-axis
-        circles.append([(150.0*10**3,0.0,0.0),10*10**3,(0.0,0.0,1.0)]) # Circle at 150,0,0 with radius 10mm on the x-axis
-        circles.append([(200.0*10**3,0.0,0.0),5*10**3,(0.0,0.0,1.0)]) # Circle at 200,0,0 with radius 5mm on the x-axis
-        circles.append([(0.0,50.0*10**3,50.0*10**3),25*10**3,(0.0,-1.0,0.0)]) # Circle at 0,50,50 with radius 25mm on the x-axis
-        circles.append([(50.0*10**3,50.0*10**3,50.0*10**3),20*10**3,(0.0,-1.0,0.0)]) # Circle at 50,50,50 with radius 20mm on the x-axis
-        circles.append([(100.0*10**3,50.0*10**3,50.0*10**3),15*10**3,(0.0,-1.0,0.0)]) # Circle at 100,50,50 with radius 15mm on the x-axis
-        circles.append([(150.0*10**3,50.0*10**3,50.0*10**3),10*10**3,(0.0,-1.0,0.0)]) # Circle at 150,50,50 with radius 10mm on the x-axis
-        circles.append([(200.0*10**3,50.0*10**3,50.0*10**3),5*10**3,(0.0,-1.0,0.0)]) # Circle at 200,50,50 with radius 5mm on the x-axis
+        circles.append([(0.0,0.0,0.0),(25*10**3,0.0,360.0),(0.0,0.0,1.0)]) # Circle at 0,0,0 with radius 25mm on the x-axis
+        circles.append([(50.0*10**3,0.0,0.0),(20*10**3,0.0,360.0),(0.0,0.0,1.0)]) # Circle at 50,0,0 with radius 20mm on the x-axis
+        circles.append([(100.0*10**3,0.0,0.0),(15*10**3,0.0,360.0),(0.0,0.0,1.0)]) # Circle at 100,0,0 with radius 15mm on the x-axis
+        circles.append([(150.0*10**3,0.0,0.0),(10*10**3,0.0,360.0),(0.0,0.0,1.0)]) # Circle at 150,0,0 with radius 10mm on the x-axis
+        circles.append([(200.0*10**3,0.0,0.0),(5*10**3,0.0,360.0),(0.0,0.0,1.0)]) # Circle at 200,0,0 with radius 5mm on the x-axis
+        circles.append([(0.0,50.0*10**3,50.0*10**3),(25*10**3,0.0,360.0),(0.0,-1.0,0.0)]) # Circle at 0,50,50 with radius 25mm on the x-axis
+        circles.append([(50.0*10**3,50.0*10**3,50.0*10**3),(20*10**3,0.0,360.0),(0.0,-1.0,0.0)]) # Circle at 50,50,50 with radius 20mm on the x-axis
+        circles.append([(100.0*10**3,50.0*10**3,50.0*10**3),(15*10**3,0.0,360.0),(0.0,-1.0,0.0)]) # Circle at 100,50,50 with radius 15mm on the x-axis
+        circles.append([(150.0*10**3,50.0*10**3,50.0*10**3),(10*10**3,0.0,360.0),(0.0,-1.0,0.0)]) # Circle at 150,50,50 with radius 10mm on the x-axis
+        circles.append([(200.0*10**3,50.0*10**3,50.0*10**3),(5*10**3,0.0,360.0),(0.0,-1.0,0.0)]) # Circle at 200,50,50 with radius 5mm on the x-axis
         verified_geometries: int = 0
         for geometry in geometries:
             for circle in circles:
                 geometry_values = list(geometry.values())[0]
-                if within_a_percent(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[0],geometry_values[0]) and within_a_percent_tuple(circle[2],geometry_values[2]):
+                if within_a_percent_tuple(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[0],geometry_values[0]) and within_a_percent_tuple(circle[2],geometry_values[2]):
                     verified_geometries += 1
         self.assertEquals(verified_geometries, 10)
     def test5(self):
         """
         Basic Arc only one arc in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic Arc.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Arc.dxf",[],True)
         arc = geometries[0].get('ARC0')
         self.assertTrue(arc[0],(0.0,0.0,0.0))# check center
         self.assertTrue(within_a_percent(arc[1][0],10.0*10**3))# check radius 10mm
@@ -111,7 +111,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Complex Arcs multiple Arcs in 3D
         """
-        geometries = importer.import_dxf_file("Test Files/Complex Arcs.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Arcs.dxf",[],True)
         arcs: List[Tuple[float,...]] = []
         arcs.append([(0.0,0.0,0.0),(20.0*10**3,0.0,180.0),(1.0,0.0,0.0)]) # Arc on x-axis
         arcs.append([(0.0,0.0,0.0),(20.0*10**3,-90.0,90.0),(0.0,0.0,1.0)]) # Arc on y-axis
@@ -129,7 +129,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Basic Ellipse only one ellipse in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic Ellipse.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Ellipse.dxf",[],True)
         ellipse = geometries[0].get('ELLIPSE0')
         self.assertTrue(ellipse[0],(0.0,0.0,0.0))# check center
         self.assertTrue(within_a_percent_tuple(ellipse[1],(25.0*10**3,0.0,0.0)))# Length of Major Axis 25mm
@@ -138,7 +138,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Complex Ellipsis multiple ellipses in 3D
         """
-        geometries = importer.import_dxf_file("Test Files/Complex Ellipses.dxf")
+        geometries = importer.import_dxf_file("Test Files/Complex Ellipses.dxf",[],True)
         ellipses: List[Tuple[float,...]] = []
         ellipses.append([(0.0,0.0,0.0),(25.0*10**3,0.0,0.0),0.5]) # Ellipse on x-axis
         ellipses.append([(0.0,0.0,0.0),(-25.0*10**3,0.0,0.0),0.5]) # Ellipse on y-axis
@@ -156,7 +156,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Basic Spline only one line in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic Spline.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic Spline.dxf",[],True)
         spline = geometries[0].get('SPLINE0')
         self.assertTrue(spline[0][0],5)# Degree 5
         self.assertTrue(spline[0][1],1)# Closed true
@@ -168,7 +168,7 @@ class DXF_Tests(unittest.TestCase):
         """
         Basic LWPolyline only one line in 2D
         """
-        geometries = importer.import_dxf_file("Test Files/Basic LWPolyline.dxf")
+        geometries = importer.import_dxf_file("Test Files/Basic LWPolyline.dxf",[],True)
         lwpolyline = geometries[0].get('LWPOLYLINE0')
         self.assertTrue(within_a_percent_tuple(lwpolyline[0],(25.0*10**3,0.0,0.0,0.0,0.0)))# First point (25,0,0)mm
         self.assertTrue(within_a_percent_tuple(lwpolyline[1],(0.0,0.0,0.0,0.0,0.0)))# First point (25,0,0)mm
@@ -184,12 +184,12 @@ class TXT_Error_Tests(unittest.TestCase):
         """
         No file found import_txt_file throws error
         """
-        self.assertRaises(Exception, lambda: importer.import_txt_file(""))
+        self.assertRaises(Exception, lambda: importer.import_txt_file("",[],True))
     def test2(self):
         """
         File missing extension import_txt_file throws error
         """
-        self.assertRaises(Exception, lambda: importer.import_txt_file("Test Files/test_geometries",None))
+        self.assertRaises(Exception, lambda: importer.import_txt_file("Test Files/test_geometries",[],True))
 
 class TXT_Tests(unittest.TestCase):
     """
@@ -199,19 +199,19 @@ class TXT_Tests(unittest.TestCase):
         """
         One 2D point
         """
-        geometries = importer.import_txt_file("Test Files/text_2d.txt")
+        geometries = importer.import_txt_file("Test Files/text_2d.txt",[],True)
         self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2))
     def test2(self):
         """
         One 3D point
         """
-        geometries = importer.import_txt_file("Test Files/text_3d.txt")
+        geometries = importer.import_txt_file("Test Files/text_3d.txt",[],True)
         self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
     def test3(self):
         """
         Varying percision of points
         """
-        geometries = importer.import_txt_file("Test Files/text_precision.txt")
+        geometries = importer.import_txt_file("Test Files/text_precision.txt",[],True)
         self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
         self.assertEqual(geometries[1].get('POINT1'),(1.11,2.22,3.33))
         self.assertEqual(geometries[2].get('POINT2'),(1.111,2.222,3.333))
@@ -220,7 +220,7 @@ class TXT_Tests(unittest.TestCase):
         """
         No points
         """
-        geometries = importer.import_txt_file("Test Files/text_no_points.txt")
+        geometries = importer.import_txt_file("Test Files/text_no_points.txt",[],True)
         self.assertEqual(len(geometries),0)
 
 class CSV_Error_Tests(unittest.TestCase):
@@ -231,12 +231,12 @@ class CSV_Error_Tests(unittest.TestCase):
         """
         No file found import_csv_file throws error
         """
-        self.assertRaises(Exception, lambda: importer.import_csv_file(""))
+        self.assertRaises(Exception, lambda: importer.import_csv_file("",[],True))
     def test2(self):
         """
         File missing extension import_csv_file throws error
         """
-        self.assertRaises(Exception, lambda: importer.import_csv_file("Test Files/test_geometries",None))
+        self.assertRaises(Exception, lambda: importer.import_csv_file("Test Files/test_geometries",[],True))
 
 class CSV_Tests(unittest.TestCase):
     """
@@ -247,7 +247,7 @@ class CSV_Tests(unittest.TestCase):
         """
         General test, one of each geometry
         """
-        geometries = importer.import_csv_file("Test Files/test.csv")
+        geometries = importer.import_csv_file("Test Files/test.csv",[],True)
 
         # POINT
         self.assertEqual(geometries[0].get('POINT0')[0],(1.0,2.0,3.0))
