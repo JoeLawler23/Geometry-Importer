@@ -1,5 +1,8 @@
 TO-DO:
     1) Write tests for export txt/csv/dxf
+    2) Create wrapper function DONE
+    3) Add string for geometries to be processed
+    4) Add flag for converting geometries to accepted geometries vs. ignoring them
 
 List of all DXF geometries in ezdxf
         POINT
@@ -49,3 +52,11 @@ Implemented CSV Geometries:
         CIRCLE - DONE
         ARC - DONE
         ELLIPSE - DONE
+
+Conversions:
+        Line
+        Arc -> Lines
+        Cirlce -> Arcs -> Lines # REMOVE CIRCLE
+        Ellipse -> Arcs -> Lines
+        Spline -> ?
+        Lwpolyline -> ?

@@ -12,3 +12,16 @@ https://ezdxf.mozman.at/docs/addons/drawing.html#module-ezdxf.addons.drawing
 # Break up complex geometries into small lines (quality param either min length or number of segments or default break based on length)
 # Add into geometry importer repo
 # Try demo mode for Autolaze
+
+Create function to convert all geometries to lines
+Add filter to functions so that only geometries that you want are imported (string as filter)
+Convert all other functions to a series of lines
+
+A string to determine geometries u want to output
+A flag would be whether to convert the geometries to the accepted geometries
+
+Add one wrapper function and keep the individual functions
+
+Add implementation for extra geometries in csv and txt
+
+Automate testing in github
