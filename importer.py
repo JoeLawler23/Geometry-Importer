@@ -11,7 +11,7 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
 import csv
-import geometry_to_line
+from geometry_to_line import convert_to
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -72,15 +72,19 @@ UNIT_TABLE: Dict[str, int] = {
 }
 
 
-def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, num_segments: float = 0, min_length: float = 0, units_min_length: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Import a DXF file and returning a list of entities
 
     Args:
         filename (str): DXF filename with path
-        geometry_filter (Tuple[str]): A list of accepted geometries to output
-        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
+        geometry_filter (Tuple[str]): A list of accepted geometries to output 
+            List of Acceptable Geometries: (LINE, ARC, ELLIPSE, SPLINE, LWPOLYLINE)
+        convert (bool): A toggle for whether or not to convert geometries not mentioned in the filter 
+            If convert toggle is on params need to be passed on how detailed geometries should be converted
+        num_segments (float): Number of segments to divide given geometry into to produce the return geometry
+        min_length (float): Minimum length of segments to divide given geometry into to produce return geometry
 
     Raises:
         Exception: Passed file name is not found, corrupt, or not a DXF file
@@ -92,7 +96,7 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -
         List of supported geometries and their associated values
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
             ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)]) NOTE this includes circles
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     '''
@@ -124,77 +128,102 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool) -
         # Entity name
         name: str = entity.DXFTYPE
 
-        # Create values array for an entity's specified values
-        # Create temp_values array for entity's that have to be converted
-        values: List[Tuple[float, ...]] = []
-        temp_values: List[Tuple[float, ...]] = []
+        # LINE
+        if name == 'LINE' and geometry_filter.__contains__("LINE"):  # Only add line if it is contained in filter
+            
+            # Add geometry
+            geometries.append({name+str(entity_index):  # Add name & number
+            (tuple([conversion_factor*x for x in entity.dxf.start.xyz]),  # Add start point
+            tuple([conversion_factor*x for x in entity.dxf.end.xyz]))})  # Add end point 
+            
+        # ARC/CIRCLE
+        elif name == 'ARC' or name == 'CIRCLE':  # Group Arc and Cirlces from dxf into one type internally
+            
+            # Set angles
+            start_angle: float
+            end_angle: float
+            if name == 'CIRCLE':  # CIRCLE
+                start_angle = 0.0
+                end_angle = 360.0
+            else:  # ARC
+                start_angle = entity.dxf.start_angle
+                end_angle = entity.dxf.end_angle
+
+            # Create arc entry
+            arc: List[Dict[str, List[Tuple[float, ...]]]] = {'ARC'+str(entity_index):(  # Add name & number
+            tuple([conversion_factor*x for x in entity.dxf.center.xyz]),  # Add center point
+            tuple([entity.dxf.radius*conversion_factor, start_angle, end_angle]),  # Add radius/start angle/end angle
+            tuple(entity.dxf.extrusion.xyz))}  # Add plane
+
+            if geometry_filter.__contains__('ARC'):  # Geometry is included in the filter                
+                geometries.append(arc)  # Add geometry
+
+            elif convert and geometry_filter.__contains__ ('LINE'):  # Arc is not included but line is and coverted flag is set
+                # TODO see if this works as its supposed to 
+                for line in convert_to('ARC', 'LINE', arc, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
+                    geometries.append(line)
         
-        if name == 'LINE':
-            # Start point
-            values.append(
-                tuple([conversion_factor*x for x in entity.dxf.start.xyz]))
-            # End point
-            values.append(
-                tuple([conversion_factor*x for x in entity.dxf.end.xyz]))
-        elif name == 'ARC' or name == 'CIRCLE':
-            values.append(tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
-            if name == 'ARC':
-                # Radius, Start angle, End angle NOTE angles go in a counter-clockwise rotation by default **
-                values.append([entity.dxf.radius*conversion_factor, entity.dxf.start_angle, entity.dxf.end_angle])
-            else:
-                # Radius, 0, 360 NOTE circle entities don't contain angle measurments
-                values.append([entity.dxf.radius*conversion_factor, 0, 360])
-            values.append(entity.dxf.extrusion.xyz)  # Plane
+        # ELLIPSE
         elif name == 'ELLIPSE':
-            values.append(
-                tuple([conversion_factor*x for x in entity.dxf.center.xyz]))  # Center
-            # Length of major axis
-            values.append(
-                tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]))
-            values.append(entity.dxf.ratio)  # Ratio of minor to major axis
-            # NOTE fusion does not export any plane orientation information may need to look into later
-        elif name == 'SPLINE':
-            control_points_counter: int = 0
-            control_points: List[Tuple[float, ...]] = []
-            for i in entity.control_points:
-                # Convert control points from vector to list of tuples
-                control_points.append(tuple([conversion_factor*x for x in i]))
-                control_points_counter += 1
-            # Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
-            values.append(
-                [entity.dxf.degree, entity.CLOSED, control_points_counter])
-            # Add control points to end of points list
-            values[1:1] = control_points
-            values.append(entity.knots)  # Knots
-            if len(entity.weights) == 0:
-                weights: List[float] = []
-                for i in range(len(entity.control_points)):
-                    weights.append(1.0)
-                values.append(weights)  # Add an array of 1.0's
-            else:
-                values.append(entity.weights)  # Add the given Weights
-        elif name == 'LWPOLYLINE':
-            point: Tuple[float, ...] = []
-            count: int = 0
-            for i in entity.lwpoints.values:  # Format points
-                if count % 5 == 0 and count != 0:
-                    values.append(point)
-                    point = []
-                point.append(i)
-                count += 1
-            values.append(point)
-            for point in values:  # Convert first 2 points
-                point[0] *= conversion_factor
-                point[1] *= conversion_factor
-            # Add boolean for whether or not the polyline is closed
-            values.append(entity.closed)
+
+            # Create ellipse entry
+            ellipse: List[Dict[str, List[Tuple[float, ...]]]] = {name+str(entity_index):(  # Add name & number
+            tuple([conversion_factor*x for x in entity.dxf.center.xyz]), # Add center point
+            tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]), # Add length of major axis
+            entity.dxf.ratio)}  # Add ratio
+
+            if geometry_filter.__contains__('ELLIPSE'):  # Geometry is included in the filter
+                geometries.append(ellipse)  # Add geometry
+
+            elif convert:  # Ellipse is not included in filter
+                if geometry_filter.__contains__('ARC'):  # Convert to arc first to save most data
+                    # TODO see if this works as its supposed to 
+                    for line in convert_to('ELLIPSE', 'ARC', ellipse, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
+                        geometries.append(line)
+                else:
+                    # TODO see if this works as its supposed to 
+                    for line in convert_to('ELLIPSE', 'LINE', ellipse, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
+                        geometries.append(line)
+
+        # elif name == 'SPLINE':
+        #     control_points_counter: int = 0
+        #     control_points: List[Tuple[float, ...]] = []
+        #     for i in entity.control_points:
+        #         # Convert control points from vector to list of tuples
+        #         control_points.append(tuple([conversion_factor*x for x in i]))
+        #         control_points_counter += 1
+        #     # Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
+        #     values.append(
+        #         [entity.dxf.degree, entity.CLOSED, control_points_counter])
+        #     # Add control points to end of points list
+        #     values[1:1] = control_points
+        #     values.append(entity.knots)  # Knots
+        #     if len(entity.weights) == 0:
+        #         weights: List[float] = []
+        #         for i in range(len(entity.control_points)):
+        #             weights.append(1.0)
+        #         values.append(weights)  # Add an array of 1.0's
+        #     else:
+        #         values.append(entity.weights)  # Add the given Weights
+        # elif name == 'LWPOLYLINE':
+        #     point: Tuple[float, ...] = []
+        #     count: int = 0
+        #     for i in entity.lwpoints.values:  # Format points
+        #         if count % 5 == 0 and count != 0:
+        #             values.append(point)
+        #             point = []
+        #         point.append(i)
+        #         count += 1
+        #     values.append(point)
+        #     for point in values:  # Convert first 2 points
+        #         point[0] *= conversion_factor
+        #         point[1] *= conversion_factor
+        #     # Add boolean for whether or not the polyline is closed
+        #     values.append(entity.closed)
         else:
             # Throw a warning when entity is not accounted for
             warning('UNKNOWN GEOMETRY: '+name)
         # end if
-
-        # Add entity name and corresponding points to array
-        geometries.append({name+str(entity_index): values})
 
     # Return array of all geometries
     return geometries
@@ -251,10 +280,8 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     for entry in scans:
         for entity in entry:
             name: str = entity  # Name of geometry
-            # Truncate name to just include the geometry
-            geometry_name: str = ''.join([i for i in name if not i.isdigit()])
-            points: List[Tuple[float, ...]] = entry.get(
-                name)  # List to store geometry
+            geometry_name: str = ''.join([i for i in name if not i.isdigit()])  # Truncate name to just include the geometry
+            points: List[Tuple[float, ...]] = entry.get(name)  # List to store geometry
 
             # Add geometry in proper format
             if geometry_name == 'CIRCLE':
