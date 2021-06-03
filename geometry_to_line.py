@@ -2,6 +2,8 @@ from logging import warning
 from typing import Dict, List, Tuple
 import math
 
+from ezdxf.lldxf.const import VRM_2D_OPTIMIZED
+
 CONVESION_FACTORS: List[float] = [
     1.0,  # 0 = Unitless (NO CONVERION USED)
     3.9370079*10**5,  # 1 = Inches
@@ -110,6 +112,8 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
 
 def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     
+    #num segments denotes the number of arcs
+
     for ellipse in scans:
         values = scans.get(ellipse)
         center = values[0]
@@ -124,17 +128,18 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
         points: List[Tuple[float, ...]] = []
 
         # Calculate Points NumSegments
-        angle = 360/num_segments  # num points
+        angle = (360/num_segments)/2  # num points
 
         # # Calculate Points SegmentLength
         # # Circumfrance of Ellipse
         # # = 2*PI*sqrt((a^2 + b^2)/2)
         # circumfrance = 2*math.pi*math.sqrt((major_radius*major_radius + minor_radius*minor_radius)/2)
         # angle = (segment_length/circumfrance) * 360 # NOTE segment length has to be less than the circufrance
-        # print
+        
+        # Calculate points
         conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
         theta = 0
-        for i in range(0,num_segments+1):
+        for i in range(0,2*num_segments):  # Need to generate 2x to account for midpoints
             theta = i*angle
             radius = major_radius*minor_radius / (
             math.sqrt(math.pow(minor_radius*math.cos(math.radians(theta)),2) + 
@@ -142,17 +147,33 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 
             x:float = radius*math.cos(math.radians(theta)) # Convert to cartesian
             y:float = radius*math.sin(math.radians(theta)) # Convert to cartesian
-            print ('{0},{1},{2}'.format(round(radius,1), round(x,1), round(y,1)))
             points.append([x+center[0], y+center[1], center[2]])  # Add point with center offset
 
-        # Generated Lines
-        lines: List[Dict[str, List[Tuple[float, ...]]]] = []
+        # Find arc that encompasses 2 points
+        arcs: List[Dict[str, List[Tuple[float, ...]]]] = []
+        for i in range(0,num_segments):
+            p1x = points[2*i][0]
+            p1y = points[2*i][1]
+            p2x = points[2*i+1][0]
+            p2y = points[2*i+1][1]
+            p3x = points[((2*i+2)%(len(points)))][0]
+            p3y = points[((2*i+2)%(len(points)))][1]
 
-        # Make each point into a line
-        for i in range(0, num_segments):
-            lines.append({'LINE'+str(i): [points[i], points[i+1]]})  # Convert points into lines
+            # Calculate
+            # Center point
+            try:
+                cx = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
+                cy = ((p1x*p1x + p1y*p1y - p3x*p3x - p3y*p3y)/(2*p1y - 2*p3y))-(cx*((2*p1x-2*p3x)/(2*p1y - 2*p3y)))
+            except ZeroDivisionError as e:
+                warning ('Divide by zero error')
+            # Radius 
+            r = math.sqrt(math.pow(p1x-cx,2) + math.pow(p1y-cy,2))
 
-        return lines
+            # Angles
+            start_angle = (1 if p2x < 0 or p2y < 0 else -1)*(math.degrees(math.atan((p1y+cy)/(p1x+cx))))  # When the start point intersects with the point of the next arc
+            end_angle = 180 + (1 if p2x < 0 or p2y < 0 else -1)*(math.degrees(math.atan((p3y+cy)/(p3x+cx))))  # When the start point intersects with the point of the next arc
+            arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([r/conversion_factor,start_angle,end_angle]),tuple([0,0,1]))})
+
 
         # FIND ARC STEPS:
         # 0. CONVERT TO POLAR
@@ -162,7 +183,7 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
         # 4. Using those 3 points u can solve for center x,y
 
 
-    print
+    return arcs
     
 
 
