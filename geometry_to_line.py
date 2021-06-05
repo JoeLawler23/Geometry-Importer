@@ -147,11 +147,16 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 
             x:float = radius*math.cos(math.radians(theta)) # Convert to cartesian
             y:float = radius*math.sin(math.radians(theta)) # Convert to cartesian
+            print('{0},{1},{2}'.format(round(x,10),round(y,10),round(theta,10)))  # DEBUGGING
             points.append([x+center[0], y+center[1], center[2]])  # Add point with center offset
 
         # Find arc that encompasses 2 points
         arcs: List[Dict[str, List[Tuple[float, ...]]]] = []
         for i in range(0,num_segments):
+            # Debugging
+            # v1 = 2*i
+            # v2 = 2*i+1
+            # v3 = ((2*i+2)%(len(points)))
             p1x = points[2*i][0]
             p1y = points[2*i][1]
             p2x = points[2*i+1][0]
@@ -161,6 +166,8 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 
             # Calculate
             # Center point
+            cx = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
+
             try:
                 cx = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
                 cy = ((p1x*p1x + p1y*p1y - p3x*p3x - p3y*p3y)/(2*p1y - 2*p3y))-(cx*((2*p1x-2*p3x)/(2*p1y - 2*p3y)))
@@ -169,11 +176,12 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
             # Radius 
             r = math.sqrt(math.pow(p1x-cx,2) + math.pow(p1y-cy,2))
 
-            # Angles
-            start_angle = (1 if p2x < 0 or p2y < 0 else -1)*(math.degrees(math.atan((p1y+cy)/(p1x+cx))))  # When the start point intersects with the point of the next arc
-            end_angle = 180 + (1 if p2x < 0 or p2y < 0 else -1)*(math.degrees(math.atan((p3y+cy)/(p3x+cx))))  # When the start point intersects with the point of the next arc
+            # Angles # TODO THIS IS THE ISSUE HAS TO DO WITH INVERTING THE ANGLE * SINE/COSINE CURVE
+            negation= (-1 if p2x < 0 or p2y < 0 else 1)
+            start_angle = (180 if negation < 0 else 0)+-1*(math.degrees(math.atan((p1y+cy)/(p1x+cx))))  # When the start point intersects with the point of the next arc
+            end_angle = (180 if negation < 0 else 0)+-1*(180+(math.degrees(math.atan((p3y+cy)/(p3x+cx)))))  # When the start point intersects with the point of the next arc
             arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([r/conversion_factor,start_angle,end_angle]),tuple([0,0,1]))})
-
+            print()
 
         # FIND ARC STEPS:
         # 0. CONVERT TO POLAR
