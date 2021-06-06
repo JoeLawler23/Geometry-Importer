@@ -260,7 +260,6 @@ LETTERS_NUMBERS: Dict[str, List[Dict[str, List[Tuple[float, ...]]]]] = {
     'Z': [{'LINE0': ((0.25, 1.0, 0.0), (0.75, 1.0, 0.0))},
           {'LINE1': ((0.75, 1.0, 0.0), (0.25, 0.0, 0.0))},
           {'LINE2': ((0.25, 0.0, 0.0), (0.75, 0.0, 0.0))}],
-
 }
 
 def create_letter_from_dxf(letter: str, scans: List[Dict[str, List[Tuple[float, ...]]]]):
