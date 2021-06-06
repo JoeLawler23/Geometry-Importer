@@ -109,7 +109,7 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
 
     return lines
 
-
+# NOT STABLE
 def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     
     #num segments denotes the number of arcs
@@ -157,31 +157,61 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
             # v1 = 2*i
             # v2 = 2*i+1
             # v3 = ((2*i+2)%(len(points)))
-            p1x = points[2*i][0]
-            p1y = points[2*i][1]
-            p2x = points[2*i+1][0]
-            p2y = points[2*i+1][1]
-            p3x = points[((2*i+2)%(len(points)))][0]
-            p3y = points[((2*i+2)%(len(points)))][1]
+            p1x: float = points[2*i][0]
+            p1y: float = points[2*i][1]
+            p2x: float = points[2*i+1][0]
+            p2y: float = points[2*i+1][1]
+            p3x: float = points[((2*i+2)%(len(points)))][0]
+            p3y: float = points[((2*i+2)%(len(points)))][1]
 
             # Calculate
             # Center point
-            cx = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
+            cx: float = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
 
             try:
-                cx = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
-                cy = ((p1x*p1x + p1y*p1y - p3x*p3x - p3y*p3y)/(2*p1y - 2*p3y))-(cx*((2*p1x-2*p3x)/(2*p1y - 2*p3y)))
-            except ZeroDivisionError as e:
+                cx: float = ((p1x*p1x + p1y*p1y - p2x*p2x - p2y*p2y) - (((2*p1y - 2*p2y)*(p1x*p1x + p1y*p1y -p3x*p3x - p3y*p3y))/(2*p1y -2*p3y)))/((2*p1x - 2*p2x) - ((2*p1y-2*p2y)*(2*p1x-2*p3x))/(2*p1y-2*p3y))
+                cy: float = ((p1x*p1x + p1y*p1y - p3x*p3x - p3y*p3y)/(2*p1y - 2*p3y))-(cx*((2*p1x-2*p3x)/(2*p1y - 2*p3y)))
+            except ZeroDivisionError:
                 warning ('Divide by zero error')
             # Radius 
-            r = math.sqrt(math.pow(p1x-cx,2) + math.pow(p1y-cy,2))
+            radius: float = math.sqrt(math.pow(p1x-cx,2) + math.pow(p1y-cy,2))
 
-            # Angles # TODO THIS IS THE ISSUE HAS TO DO WITH INVERTING THE ANGLE * SINE/COSINE CURVE
-            negation= (-1 if p2x < 0 or p2y < 0 else 1)
-            start_angle = (180 if negation < 0 else 0)+-1*(math.degrees(math.atan((p1y+cy)/(p1x+cx))))  # When the start point intersects with the point of the next arc
-            end_angle = (180 if negation < 0 else 0)+-1*(180+(math.degrees(math.atan((p3y+cy)/(p3x+cx)))))  # When the start point intersects with the point of the next arc
-            arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([r/conversion_factor,start_angle,end_angle]),tuple([0,0,1]))})
-            print()
+            # Angles # TODO IN BETWEEN QUADRANTS
+            start_angle: float
+            end_angle: float
+            x: float = round(cx,3)
+            y: float = round(cy,3)
+            start_angle = (math.degrees(math.atan((p1y+cy)/(p1x-cx))))
+            end_angle = math.degrees(math.atan((p3y+cy)/(p3x-cx)))
+
+            if p1x > 0 and p1y > 0: # Quadrant 1 Start
+                start_angle = math.degrees(math.atan((p1y-cy)/(p1x-cx)))
+            elif p1x < 0 and p1y > 0: # Quadrant 2 Start
+                start_angle = 180 + -1*math.degrees(math.atan((p1y+cy)/(p1x-cx)))
+            elif p1x < 0 and p1y < 0: # Quadrant 3 Start
+                start_angle = 90 + (90 - math.degrees(math.atan((p1y-cy)/(p1x+cx))))
+            elif p1x > 0 and p1y < 0: # Quadrant 4 Start
+                start_angle = -1*start_angle
+            elif p1x == 0:
+                print
+            elif p1y == 0:
+                start_angle = -1*(math.degrees(math.atan((p1y+cy)/(p1x-cx))))
+            
+            if p3x > 0 and p3y > 0: # Quadrant 1 End
+                end_angle = 180 + math.degrees(math.atan((p3y-cy)/(p3x-cx)))
+            elif p3x < 0 and p3y > 0: # Quadrant 2 End
+                end_angle = 180 - math.degrees(math.atan((p3y+cy)/(p3x-cx)))
+            elif p3x < 0 and p3y < 0: # Quadrant 3 End
+                end_angle = math.degrees(math.atan((p3y-cy)/(p3x-cx)))
+            elif p3x > 0 and p3y < 0: # Quadrant 4 End
+                end_angle = end_angle
+            elif p3x == 0:
+                print
+            elif p3y == 0:
+                end_angle = (180 + math.degrees(math.atan((p3y-cy)/(p3x-cx)))) - 180
+            
+            arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([radius/conversion_factor,start_angle,end_angle]))})
+            print
 
         # FIND ARC STEPS:
         # 0. CONVERT TO POLAR
@@ -193,8 +223,6 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 
     return arcs
     
-
-
 def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, min_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''[summary]
 
@@ -219,9 +247,9 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
 
 
 # FUNCTIONS TO ADD
-# def convert() -> converts one geometry into another
-# def arc_to_lines
-# def ellipse_to_arc
+# def convert DONE
+# def arc_to_lines DONE
+# def ellipse_to_arc NOT STABLE
 # def spline_to ?
 # def lwpolyline_to ?
 # def lines_to_points
