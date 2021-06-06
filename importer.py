@@ -466,8 +466,6 @@ def import_csv_file(
 
     Args:
         filname (str): CSV filename with path
-        geometry_filter (Tuple[str]): A list of accepted geometries to output
-        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
         units (str, optional): Units to import CSV in, defaults to Microns.
 
     Raises:
