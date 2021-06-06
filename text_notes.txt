@@ -25,3 +25,7 @@ Add one wrapper function and keep the individual functions
 Add implementation for extra geometries in csv and txt
 
 Automate testing in github
+
+Add support for points
+
+Look at changes made to the importer library in Autolaze
