@@ -11,7 +11,6 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 import re
 import csv
-from geometry_to_line import convert_to
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
@@ -128,9 +127,9 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
             
             # Add geometry
             geometries.append({'POINT'+str(entity_index):  # Add name & number
-            tuple([conversion_factor*x for x in entity.dxf.end.xyz])})  # Add point 
+            tuple([conversion_factor*x for x in entity.dxf.location])})  # Add point 
 
-        # LINE TODO Add downconverting to points
+        # LINE
         if name == 'LINE':  # Only add line if it is contained in filter
             
             # Add geometry
@@ -167,14 +166,14 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
 
             # Create ellipse entry
             ellipse: List[Dict[str, List[Tuple[float, ...]]]] = {name+str(entity_index):(  # Add name & number
-            tuple([conversion_factor*x for x in entity.dxf.center.xyz]), # Add center point
-            tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]), # Add length of major axis
+            tuple([conversion_factor*x for x in entity.dxf.center.xyz]),  # Add center point
+            tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]),  # Add length of major axis
             entity.dxf.ratio)}  # Add ratio
 
             # Add ellipse to geometries
             geometries.append(ellipse)
 
-        # SPLINE
+        # SPLINE TODO Clean up
         elif name == 'SPLINE':
             values = []
             control_points_counter: int = 0
@@ -200,6 +199,7 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
             geometries.append({'SPLINE'+str(entity_index):  # Add name & number
             values})  # Add values 
 
+        # LWPOLYLINE TODO Clean up
         elif name == 'LWPOLYLINE':
             values = []
             point: Tuple[float, ...] = []
@@ -219,6 +219,8 @@ def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
 
             geometries.append({'LWPOLYLINE'+str(entity_index):  # Add name & number
             values})  # Add values 
+        
+        # Unsupported geometries
         else:
             # Throw a warning when entity is not accounted for
             warning('UNKNOWN GEOMETRY: '+name)
@@ -333,15 +335,13 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     # end def
 
 
-def import_txt_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_txt_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports a list of points from a textfile
 
     Args:
         filname (str): TXT filename with path
-        geometry_filter (Tuple[str]): A list of accepted geometries to output
-        convert (bool): A toggle for whether or not to ignore geometries not mentioned in the filter
         units (str, optional): Units to import TXT in, defaults to Microns.
 
     Raises:
@@ -436,7 +436,7 @@ def export_txt_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     return True
 
 
-def import_csv_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_csv_file(filename: str, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports and formats geometries from a csv file
