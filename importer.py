@@ -72,19 +72,13 @@ UNIT_TABLE: Dict[str, int] = {
 }
 
 
-def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, num_segments: float = 0, min_length: float = 0, units_min_length: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_dxf_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Import a DXF file and returning a list of entities
 
     Args:
         filename (str): DXF filename with path
-        geometry_filter (Tuple[str]): A list of accepted geometries to output 
-            List of Acceptable Geometries: (POINT, LINE, ARC, ELLIPSE, SPLINE, LWPOLYLINE)
-        convert (bool): A toggle for whether or not to convert geometries not mentioned in the filter 
-            If convert toggle is on params need to be passed on how detailed geometries should be converted
-        num_segments (float): Number of segments to divide given geometry into to produce the return geometry
-        min_length (float): Minimum length of segments to divide given geometry into to produce return geometry
 
     Raises:
         Exception: Passed file name is not found, corrupt, or not a DXF file
@@ -130,19 +124,22 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
         name: str = entity.DXFTYPE
 
         # POINT TODO TEST
-        if name == 'POINT' and geometry_filter.__contains__("POINT"):  # Only add line if it is contained in filter
+        if name == 'POINT':  # Only add line if it is contained in filter
             
             # Add geometry
-            geometries.append({name+str(entity_index):  # Add name & number
+            geometries.append({'POINT'+str(entity_index):  # Add name & number
             tuple([conversion_factor*x for x in entity.dxf.end.xyz])})  # Add point 
 
         # LINE TODO Add downconverting to points
-        if name == 'LINE' and geometry_filter.__contains__("LINE"):  # Only add line if it is contained in filter
+        if name == 'LINE':  # Only add line if it is contained in filter
             
             # Add geometry
-            geometries.append({name+str(entity_index):  # Add name & number
+            line: List[Dict[str, List[Tuple[float, ...]]]] = {'LINE'+str(entity_index):  # Add name & number
             (tuple([conversion_factor*x for x in entity.dxf.start.xyz]),  # Add start point
-            tuple([conversion_factor*x for x in entity.dxf.end.xyz]))})  # Add end point 
+            tuple([conversion_factor*x for x in entity.dxf.end.xyz]))}  # Add end point 
+
+            # Add line to geometries
+            geometries.append(line)
             
         # ARC/CIRCLE
         elif name == 'ARC' or name == 'CIRCLE':  # Group Arc and Cirlces from dxf into one type internally
@@ -162,13 +159,8 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
             tuple([conversion_factor*x for x in entity.dxf.center.xyz]),  # Add center point
             tuple([entity.dxf.radius*conversion_factor, start_angle, end_angle]))}  # Add radius/start angle/end angle
 
-            if geometry_filter.__contains__('ARC'):  # Geometry is included in the filter                
-                geometries.append(arc)  # Add geometry
-
-            elif convert and geometry_filter.__contains__ ('LINE'):  # Arc is not included but line is and coverted flag is set
-                # TODO see if this works as its supposed to 
-                for line in convert_to('ARC', 'LINE', arc, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
-                    geometries.append(line)
+            # Add arc to geometries
+            geometries.append(arc)
         
         # ELLIPSE
         elif name == 'ELLIPSE':
@@ -179,54 +171,54 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
             tuple([conversion_factor*x for x in entity.dxf.major_axis.xyz]), # Add length of major axis
             entity.dxf.ratio)}  # Add ratio
 
-            if geometry_filter.__contains__('ELLIPSE'):  # Geometry is included in the filter
-                geometries.append(ellipse)  # Add geometry
+            # Add ellipse to geometries
+            geometries.append(ellipse)
 
-            elif convert:  # Ellipse is not included in filter
-                if geometry_filter.__contains__('ARC'):  # Convert to arc first to save most data
-                    # TODO see if this works as its supposed to 
-                    for line in convert_to('ELLIPSE', 'ARC', ellipse, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
-                        geometries.append(line)
-                else:
-                    # TODO see if this works as its supposed to 
-                    for line in convert_to('ELLIPSE', 'LINE', ellipse, num_segments, min_length, units_min_length):  # Arc/Circle can only be converted into a list of lines
-                        geometries.append(line)
+        # SPLINE
+        elif name == 'SPLINE':
+            values = []
+            control_points_counter: int = 0
+            control_points: List[Tuple[float, ...]] = []
+            for i in entity.control_points:
+                # Convert control points from vector to list of tuples
+                control_points.append(tuple([conversion_factor*x for x in i]))
+                control_points_counter += 1
+            # Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
+            values.append(
+                [entity.dxf.degree, entity.CLOSED, control_points_counter])
+            # Add control points to end of points list
+            values[1:1] = control_points
+            values.append(entity.knots)  # Knots
+            if len(entity.weights) == 0:
+                weights: List[float] = []
+                for i in range(len(entity.control_points)):
+                    weights.append(1.0)
+                values.append(weights)  # Add an array of 1.0's
+            else:
+                values.append(entity.weights)  # Add the given Weights
 
-        # elif name == 'SPLINE':
-        #     control_points_counter: int = 0
-        #     control_points: List[Tuple[float, ...]] = []
-        #     for i in entity.control_points:
-        #         # Convert control points from vector to list of tuples
-        #         control_points.append(tuple([conversion_factor*x for x in i]))
-        #         control_points_counter += 1
-        #     # Degree, Closed, Len control points NOTE closed is defined by whether or not the start and end match 1 = false and 0 = true
-        #     values.append(
-        #         [entity.dxf.degree, entity.CLOSED, control_points_counter])
-        #     # Add control points to end of points list
-        #     values[1:1] = control_points
-        #     values.append(entity.knots)  # Knots
-        #     if len(entity.weights) == 0:
-        #         weights: List[float] = []
-        #         for i in range(len(entity.control_points)):
-        #             weights.append(1.0)
-        #         values.append(weights)  # Add an array of 1.0's
-        #     else:
-        #         values.append(entity.weights)  # Add the given Weights
-        # elif name == 'LWPOLYLINE':
-        #     point: Tuple[float, ...] = []
-        #     count: int = 0
-        #     for i in entity.lwpoints.values:  # Format points
-        #         if count % 5 == 0 and count != 0:
-        #             values.append(point)
-        #             point = []
-        #         point.append(i)
-        #         count += 1
-        #     values.append(point)
-        #     for point in values:  # Convert first 2 points
-        #         point[0] *= conversion_factor
-        #         point[1] *= conversion_factor
-        #     # Add boolean for whether or not the polyline is closed
-        #     values.append(entity.closed)
+            geometries.append({'SPLINE'+str(entity_index):  # Add name & number
+            values})  # Add values 
+
+        elif name == 'LWPOLYLINE':
+            values = []
+            point: Tuple[float, ...] = []
+            count: int = 0
+            for i in entity.lwpoints.values:  # Format points
+                if count % 5 == 0 and count != 0:
+                    values.append(point)
+                    point = []
+                point.append(i)
+                count += 1
+            values.append(point)
+            for point in values:  # Convert first 2 points
+                point[0] *= conversion_factor
+                point[1] *= conversion_factor
+            # Add boolean for whether or not the polyline is closed
+            values.append(entity.closed)
+
+            geometries.append({'LWPOLYLINE'+str(entity_index):  # Add name & number
+            values})  # Add values 
         else:
             # Throw a warning when entity is not accounted for
             warning('UNKNOWN GEOMETRY: '+name)
@@ -341,7 +333,7 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     # end def
 
 
-def import_txt_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_txt_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports a list of points from a textfile
@@ -444,7 +436,7 @@ def export_txt_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     return True
 
 
-def import_csv_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_csv_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Summary:
         Imports and formats geometries from a csv file
@@ -619,7 +611,7 @@ def export_csv_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
     return True
 
 
-def import_file(filename: str, geometry_filter: Tuple[str], convert: bool, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
+def import_file(filename: str) -> List[Dict[str, List[Tuple[float, ...]]]]:
     '''
     Wrapper function for importing all filetypes
 
@@ -642,15 +634,15 @@ def import_file(filename: str, geometry_filter: Tuple[str], convert: bool, units
     # Run appropriate function
     # DXF file
     if (file_type == "DXF"):
-        return import_dxf_file(filename, geometry_filter, convert)
+        return import_dxf_file(filename)
 
     # CSV file
     elif (file_type == "CSV"):
-        return import_csv_file(filename, geometry_filter, convert, units)
+        return import_csv_file(filename)
 
     # TXT file
     elif (file_type == "TXT"):
-        return import_txt_file(filename, geometry_filter, convert, units)
+        return import_txt_file(filename)
 
     else:
         # Unknown filetype
