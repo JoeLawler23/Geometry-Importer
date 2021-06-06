@@ -164,10 +164,3 @@ def create_alphabet():
     Print out a list of all dxf files, letters only drawn from lines, in the Letters folder
 
 
-Geometry To Line:
-
-Convert any geometry to a series of lines and points
-
-Functions:
-
-
