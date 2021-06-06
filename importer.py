@@ -80,7 +80,7 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
     Args:
         filename (str): DXF filename with path
         geometry_filter (Tuple[str]): A list of accepted geometries to output 
-            List of Acceptable Geometries: (LINE, ARC, ELLIPSE, SPLINE, LWPOLYLINE)
+            List of Acceptable Geometries: (POINT, LINE, ARC, ELLIPSE, SPLINE, LWPOLYLINE)
         convert (bool): A toggle for whether or not to convert geometries not mentioned in the filter 
             If convert toggle is on params need to be passed on how detailed geometries should be converted
         num_segments (float): Number of segments to divide given geometry into to produce the return geometry
@@ -94,8 +94,9 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
         List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
 
         List of supported geometries and their associated values
+            POINT: ('POINT#': [(X,Y,Z)])
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)]) NOTE this includes circles
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE this includes circles
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
@@ -128,7 +129,14 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
         # Entity name
         name: str = entity.DXFTYPE
 
-        # LINE
+        # POINT TODO TEST
+        if name == 'POINT' and geometry_filter.__contains__("POINT"):  # Only add line if it is contained in filter
+            
+            # Add geometry
+            geometries.append({name+str(entity_index):  # Add name & number
+            tuple([conversion_factor*x for x in entity.dxf.end.xyz])})  # Add point 
+
+        # LINE TODO Add downconverting to points
         if name == 'LINE' and geometry_filter.__contains__("LINE"):  # Only add line if it is contained in filter
             
             # Add geometry
@@ -152,8 +160,7 @@ def import_dxf_file(filename: str, geometry_filter: Tuple[str], convert: bool, n
             # Create arc entry
             arc: List[Dict[str, List[Tuple[float, ...]]]] = {'ARC'+str(entity_index):(  # Add name & number
             tuple([conversion_factor*x for x in entity.dxf.center.xyz]),  # Add center point
-            tuple([entity.dxf.radius*conversion_factor, start_angle, end_angle]),  # Add radius/start angle/end angle
-            tuple(entity.dxf.extrusion.xyz))}  # Add plane
+            tuple([entity.dxf.radius*conversion_factor, start_angle, end_angle]))}  # Add radius/start angle/end angle
 
             if geometry_filter.__contains__('ARC'):  # Geometry is included in the filter                
                 geometries.append(arc)  # Add geometry
