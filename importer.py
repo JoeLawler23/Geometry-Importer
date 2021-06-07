@@ -250,8 +250,7 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
         List of exportable geometries:
             List of supported geometries and the format
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
             ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE  OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
             LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
@@ -300,8 +299,7 @@ def export_dxf_file(filename: str, scans: List[Dict[str, List[Tuple[float, ...]]
                 model_space.add_line(points[0], points[1])
             elif geometry_name == 'ARC':
                 # Center, Radius, Start Angle, End Angle, IsCounterClockwise, Attributes
-                model_space.add_arc(points[0], points[1][0], points[1][1], points[1][2], True, dxfattribs={
-                                    'extrusion': points[2]})
+                model_space.add_arc(points[0], points[1][0], points[1][1], points[1][2], True)
             elif geometry_name == 'ELLIPSE':
                 # Center, Length Major Axis, Ratio from Minor Axis to Major Axis
                 model_space.add_ellipse(points[0], points[1], points[2],)
