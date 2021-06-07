@@ -23,9 +23,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         pip install -r requirements.txt
-    - name: Lint with pylint
-      run: |
-        pylint $(git ls-files '*.py') # Run pylint on all .py files in current directory managed under git
+#     - name: Lint with pylint
+#       run: |
+#         pylint $(git ls-files '*.py') # Run pylint on all .py files in current directory managed under git
     - name: Test with pytest
       run: |
         unittest importer_tests.py
