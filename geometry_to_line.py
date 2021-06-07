@@ -109,7 +109,6 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
 
     return lines
 
-# NOT STABLE
 def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     
     #num segments denotes the number of arcs
@@ -186,7 +185,7 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
             
             arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([radius/conversion_factor,start_angle,end_angle]))})
             print
-            
+
     return arcs
     
 def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, min_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
