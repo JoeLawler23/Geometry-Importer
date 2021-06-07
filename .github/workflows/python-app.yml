@@ -26,6 +26,6 @@ jobs:
     - name: Lint with pylint
       run: |
         pylint $(git ls-files '*.py') --exit-zero
-    - name: Test with pytest
+    - name: Test with unittest
       run: |
-        unittest importer_tests.py
+        python -m unittest importer_tests.py
