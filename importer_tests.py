@@ -32,7 +32,7 @@ class DXF_Import_Tests(unittest.TestCase):
         """
         geometries = importer.import_dxf_file("Test Files/Basic Point.dxf")
         point = geometries[0].get('POINT0')
-        self.assertEquals(point,(0.0,0.0,0.0))  # Check point
+        self.assertEqual(point,(0.0,0.0,0.0))  # Check point
     def test_Complex_Points(self):
         """
         Complex points multiple points in 3D
@@ -51,15 +51,15 @@ class DXF_Import_Tests(unittest.TestCase):
                 geometry_values = list(geometry.values())
                 if within_a_percent_tuple(point[0],geometry_values[0]) :
                     verified_geometries += 1
-        self.assertEquals(verified_geometries, 4)
+        self.assertEqual(verified_geometries, 4)
     def test_Basic_Line(self):
         """
         Basic Line only one line in 2D
         """
         geometries = importer.import_dxf_file("Test Files/Basic Line.dxf")
         line = geometries[0].get('LINE0')
-        self.assertEquals(line[0],(0.0,0.0,0.0))  # Check start point
-        self.assertEquals(line[1],(50.0*10**3,0.0,0.0))  # Check end point
+        self.assertEqual(line[0],(0.0,0.0,0.0))  # Check start point
+        self.assertEqual(line[1],(50.0*10**3,0.0,0.0))  # Check end point
     def test_Complex_Lines(self):
         """
         Complex lines multiple lines in 3D
@@ -91,14 +91,14 @@ class DXF_Import_Tests(unittest.TestCase):
                 geometry_values = list(geometry.values())[0]
                 if within_a_percent_tuple(line[0],geometry_values[0]) and within_a_percent_tuple(line[1],geometry_values[1]):
                     verified_geometries += 1
-        self.assertEquals(verified_geometries, 17)
+        self.assertEqual(verified_geometries, 17)
     def test_Basic_Circles(self):
         """
         Basic circle only one circle in 2D
         """
         geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf")
         circle = geometries[0].get('ARC0')
-        self.assertEquals(circle[0],(0.0,0.0,0.0))  # Check center
+        self.assertEqual(circle[0],(0.0,0.0,0.0))  # Check center
         self.assertTrue(within_a_percent_tuple([15*10**3,0.0,360.0],circle[1]))  # Check radius
     def test_Complex_Circles(self):
         """
@@ -124,7 +124,7 @@ class DXF_Import_Tests(unittest.TestCase):
                 geometry_values = list(geometry.values())[0]
                 if within_a_percent_tuple(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[0],geometry_values[0]):
                     verified_geometries += 1
-        self.assertEquals(verified_geometries, 10)
+        self.assertEqual(verified_geometries, 10)
     def test_Basic_Arc(self):
         """
         Basic Arc only one arc in 2D
@@ -153,8 +153,7 @@ class DXF_Import_Tests(unittest.TestCase):
                 geometry_values = list(geometry.values())[0]
                 if within_a_percent_tuple(arc[1],geometry_values[1]) and within_a_percent_tuple(arc[0],geometry_values[0]):
                     verified_geometries += 1
-                    print(arc[1])
-        self.assertEquals(verified_geometries, 3)
+        self.assertEqual(verified_geometries, 3)
     def test_Basic_Ellipse(self):
         """
         Basic Ellipse only one ellipse in 2D
@@ -183,7 +182,7 @@ class DXF_Import_Tests(unittest.TestCase):
                 geometry_values = list(geometry.values())[0]
                 if within_a_percent_tuple(ellipse[0],geometry_values[0]) and within_a_percent_tuple(ellipse[1],geometry_values[1]) and within_a_percent(ellipse[2],geometry_values[2]):
                     verified_geometries += 1
-        self.assertEquals(verified_geometries, 6)
+        self.assertEqual(verified_geometries, 6)
     def test_Basic_Spline(self):
         """
         Basic Spline only one line in 2D
