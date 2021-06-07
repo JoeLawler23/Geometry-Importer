@@ -134,7 +134,7 @@ def import_dxf_file(
                                tuple([conversion_factor*x for x in entity.dxf.location])})  # Add point
 
         # LINE
-        if name == 'LINE':  # Only add line if it is contained in filter
+        elif name == 'LINE':  # Only add line if it is contained in filter
 
             # Add geometry
             line: List[Dict[str, List[Tuple[float, ...]]]] = {'LINE'+str(entity_index):  # Add name & number
@@ -371,7 +371,8 @@ def import_txt_file(
     '''
     # Import text file
     try:
-        lines: List[str] = open(filename).readlines()
+        file = open(filename)
+        lines: List[str] = file.readlines()
     except FileNotFoundError as error:
         # Reraise error
         raise Exception('File Not Found') from error
@@ -402,6 +403,9 @@ def import_txt_file(
 
             # Increase index
             geometries_index += 1
+
+    # Close text file
+    file.close()
 
     # Return list of geometries
     return geometries
@@ -451,6 +455,9 @@ def export_txt_file(
             # Write to text file with newline
             text_file.write(output+'\n')
 
+    # Close text_file
+    text_file.close()
+
     # Return true upon successful completion
     return True
 #end def
@@ -483,8 +490,8 @@ def import_csv_file(
     '''
     # Import csv file
     try:
-        imported_csv: csv = csv.reader(
-            open(filename, newline=''), delimiter=',')
+        file = open(filename, newline='')
+        imported_csv: csv = csv.reader(file, delimiter=',')
     except FileNotFoundError as error:
         # Reraise error
         raise Exception('File Not Found') from error
@@ -542,6 +549,9 @@ def import_csv_file(
         # reset points array
         points = []
         # end if
+
+    # Close file
+    file.close()
 
     return geometries
 # end def
