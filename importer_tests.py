@@ -26,45 +26,57 @@ class DXF_Import_Tests(unittest.TestCase):
     """
     Test cases for individual geometries
     """
-    def test_Basic_Point(self):
+    def test_basic_point(self):
         """
-        Basic Point only one point in 2D
+        Basic Point - only one point in 2D
         """
+        # Import 'Basic Point.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Point.dxf")
-        point = geometries[0].get('POINT0')
+        
+        # Check if equal to predetermined values
+        point = geometries[0][1][0]  # [0] - First geometry, [1] - Point's values/tuples, [0] - First value/tuple
         self.assertEqual(point,(0.0,0.0,0.0))  # Check point
-    def test_Complex_Points(self):
+    def test_complex_points(self):
         """
-        Complex points multiple points in 3D
+        Complex points - multiple points in 3D
         """
+        # Import 'Complex Points.dxf'
         geometries = importer.import_dxf_file("Test Files/Complex Points.dxf")
+
+        # Generate predetermined values
         points: List[Tuple[float,...]] = []
         points.append([(0.0,0.0,-25.0*10**3)])  # Point 1
         points.append([(25.0*10**3,0.0,-25.0*10**3)])  # Point 2
         points.append([(25.0*10**3,0.0,0.0)])  # Point 3
         points.append([(0.0,0.0,0.0)])  # Point 4
 
-        # Check if all 4 points are found in the imported file
+        # Check if each predetermined value has an associated imported value
         verified_geometries: int = 0
         for geometry in geometries:
             for point in points:
-                geometry_values = list(geometry.values())
-                if within_a_percent_tuple(point[0],geometry_values[0]) :
+                geometry_values = geometry[1][0]
+                if within_a_percent_tuple(point[0],geometry_values):
                     verified_geometries += 1
-        self.assertEqual(verified_geometries, 4)
-    def test_Basic_Line(self):
+        self.assertEqual(verified_geometries, len(points))
+    def test_basic_line(self):
         """
-        Basic Line only one line in 2D
+        Basic Line - only one line in 2D
         """
+        # Import 'Basic Line.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Line.dxf")
-        line = geometries[0].get('LINE0')
+
+        # Check if equal to predetermined value
+        line = geometries[0][1]
         self.assertEqual(line[0],(0.0,0.0,0.0))  # Check start point
         self.assertEqual(line[1],(50.0*10**3,0.0,0.0))  # Check end point
-    def test_Complex_Lines(self):
+    def test_complex_lines(self):
         """
-        Complex lines multiple lines in 3D
+        Complex lines - multiple lines in 3D
         """
+        # Import 'Complex Lines.dxf'
         geometries = importer.import_dxf_file("Test Files/Complex Lines.dxf")
+
+        # Generate predetermined values
         lines: List[Tuple[float,...]] = []
         lines.append([(0.0,0.0,0.0),(50.0*10**3,0.0,0.0)])  # Horizontal Line (0.0,0.0,0.0)mm -> (50.0,0.0,0.0)mm
         lines.append([(0.0,-25.0*10**3,0.0),(50.0*10**3,-25.0*10**3,0.0)])  # Horizontal Line (0.0,-25.0,0.0)mm -> (50.0,-25.0,0.0)mm
@@ -84,27 +96,33 @@ class DXF_Import_Tests(unittest.TestCase):
         lines.append([(0.0,-75.0*10**3,0.0),(0.0,0.0,75.0*10**3)])  # Diagonal Line 
         lines.append([(0.0,-100.0*10**3,0.0),(50.0*10**3,-100.0*10**3,0.0)])  # Diagonal Line 
 
-        # Check if all lines are found in imported file
+        # Check if each predetermined value has an associated imported value
         verified_geometries: int = 0
         for geometry in geometries:
             for line in lines:
-                geometry_values = list(geometry.values())[0]
+                geometry_values = geometry[1]
                 if within_a_percent_tuple(line[0],geometry_values[0]) and within_a_percent_tuple(line[1],geometry_values[1]):
                     verified_geometries += 1
-        self.assertEqual(verified_geometries, 17)
-    def test_Basic_Circles(self):
+        self.assertEqual(verified_geometries, len(lines))
+    def test_basic_circles(self):
         """
-        Basic circle only one circle in 2D
+        Basic Circle - only one circle in 2D
         """
+        # Import 'Basic Circle.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Circle.dxf")
-        circle = geometries[0].get('ARC0')
-        self.assertEqual(circle[0],(0.0,0.0,0.0))  # Check center
-        self.assertTrue(within_a_percent_tuple([15*10**3,0.0,360.0],circle[1]))  # Check radius
-    def test_Complex_Circles(self):
+
+        # Check if equal to predetermined values
+        circle = geometries[0]
+        self.assertEqual(circle[1][0],(0.0,0.0,0.0))  # Check center
+        self.assertTrue(circle[1][1],(15000.0,0.0,360.0))  # Check radius, start angle, end angle
+    def test_complex_circles(self):
         """
-        Complex circles multiple circles in 3D with various angles and positions
+        Complex circles - multiple circles in 3D with various angles and positions
         """
+        # Import 'Complex Circles.dxf'
         geometries = importer.import_dxf_file("Test Files/Complex Circles.dxf")
+
+        # Generate predetermined values
         circles: List[Tuple[float,...]] = []
         circles.append([(0.0,0.0,0.0),(25*10**3,0.0,360.0)])  # Circle at 0,0,0 with radius 25mm 
         circles.append([(50.0*10**3,0.0,0.0),(20*10**3,0.0,360.0)])  # Circle at 50,0,0 with radius 20mm 
@@ -117,57 +135,66 @@ class DXF_Import_Tests(unittest.TestCase):
         circles.append([(150.0*10**3,50.0*10**3,50.0*10**3),(10*10**3,0.0,360.0)])  # Circle at 150,50,50 with radius 10mm 
         circles.append([(200.0*10**3,50.0*10**3,50.0*10**3),(5*10**3,0.0,360.0)])  # Circle at 200,50,50 with radius 5mm 
         
-        # Check if all circles are in imported file
+        # Check if each predetermined value has an associated imported value
         verified_geometries: int = 0
         for geometry in geometries:
             for circle in circles:
-                geometry_values = list(geometry.values())[0]
-                if within_a_percent_tuple(circle[1],geometry_values[1]) and within_a_percent_tuple(circle[0],geometry_values[0]):
+                geometry_values = geometry[1]
+                if within_a_percent_tuple(circle[0],geometry_values[0]) and within_a_percent_tuple(circle[1],geometry_values[1]):
                     verified_geometries += 1
-        self.assertEqual(verified_geometries, 10)
-    def test_Basic_Arc(self):
+        self.assertEqual(verified_geometries, len(circles))
+    def test_basic_arc(self):
         """
-        Basic Arc only one arc in 2D
+        Basic Arc - only one arc in 2D
         """
+        # Import 'Basic Arc.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Arc.dxf")
-        arc = geometries[0].get('ARC0')
+
+        # Check if equal to predetermined values
+        arc = geometries[0][1]
         self.assertTrue(arc[0],(0.0,0.0,0.0))  # Check center
-        self.assertTrue(within_a_percent(arc[1][0],10.0*10**3))  # Check radius 10mm
-        self.assertTrue(within_a_percent(arc[1][1],0.0))  # Check start angle
-        self.assertTrue(within_a_percent(arc[1][2],180))  # Check end angle
-        self.assertTrue(arc[1],(1.0,0.0,0.0))  # Check plane
-    def test_Complex_Arcs(self):
+        self.assertTrue(within_a_percent_tuple(arc[1],(10.0*10**3,0.0,180.0)))  # Check radius, start angle, end angle
+    def test_complex_arcs(self):
         """
-        Complex Arcs multiple Arcs in 3D
+        Complex Arcs - multiple Arcs in 3D
         """
+        # Import 'Complex Arcs.dxf'
         geometries = importer.import_dxf_file("Test Files/Complex Arcs.dxf")
+
+        # Generate predetermined values
         arcs: List[Tuple[float,...]] = []
-        arcs.append([(0.0,0.0,0.0),(20.0*10**3,-90.0,90.0)])  # Arc 1
-        arcs.append([(0.0,-75.0*10**3,0.0),(25.0*10**3,-90.0,180.0)])  # Arc 2
-        arcs.append([(0.0,-75.0*10**3,0.0),(20.0*10**3,-90.0,180.0)])  # Arc 3
+        arcs.append([(0.0,0.0,0.0),(20.0*10**3,-90.0,90.0)])
+        arcs.append([(0.0,-75.0*10**3,0.0),(25.0*10**3,-90.0,180.0)])
+        arcs.append([(0.0,-75.0*10**3,0.0),(20.0*10**3,-90.0,180.0)])
         
-        # Check if all arcs are in imported file
+        # Check if each predetermined value has an associated imported value
         verified_geometries: int = 0
         for geometry in geometries:
             for arc in arcs:
-                geometry_values = list(geometry.values())[0]
+                geometry_values = geometry[1]
                 if within_a_percent_tuple(arc[1],geometry_values[1]) and within_a_percent_tuple(arc[0],geometry_values[0]):
                     verified_geometries += 1
-        self.assertEqual(verified_geometries, 3)
-    def test_Basic_Ellipse(self):
+        self.assertEqual(verified_geometries, len(arcs))
+    def test_basic_ellipse(self):
         """
-        Basic Ellipse only one ellipse in 2D
+        Basic Ellipse - only one ellipse in 2D
         """
+        # Import 'Basic Ellipse.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Ellipse.dxf")
-        ellipse = geometries[0].get('ELLIPSE0')
+
+        # Check if equal to predetermined values
+        ellipse = geometries[0][1]
         self.assertTrue(ellipse[0],(0.0,0.0,0.0))  # Check center
-        self.assertTrue(within_a_percent_tuple(ellipse[1],(25.0*10**3,0.0,0.0)))  # Length of Major Axis 25mm
-        self.assertTrue(within_a_percent(ellipse[2],0.6))  # Ratio of Minor to Major Axis 30:50
-    def test_Complex_Ellipsis(self):
+        self.assertTrue(within_a_percent_tuple(ellipse[1],(25.0*10**3,0.0,0.0)))  # Length of Major Axis
+        self.assertTrue(within_a_percent(ellipse[2][0],0.6))  # Ratio of Minor to Major Axis
+    def test_complex_ellipsis(self):
         """
-        Complex Ellipsis multiple ellipses in 3D
+        Complex Ellipsis - multiple ellipses in 3D
         """
+        # Import 'Complex Ellipses.dxf'
         geometries = importer.import_dxf_file("Test Files/Complex Ellipses.dxf")
+
+        # Generate predetermined values
         ellipsis: List[Tuple[float,...]] = []
         ellipsis.append([(0.0,0.0,0.0),(25.0*10**3,0.0,0.0),0.5])  # Ellipse on x-axis
         ellipsis.append([(0.0,0.0,0.0),(-25.0*10**3,0.0,0.0),0.5])  # Ellipse on y-axis
@@ -175,31 +202,37 @@ class DXF_Import_Tests(unittest.TestCase):
         ellipsis.append([(50.0*10**3,0.0,0.0),(0.0,20.0*10**3,0.0),0.5])  # Ellipse with ratio 0.5 with major axis on y
         ellipsis.append([(50.0*10**3,0.0,0.0),(20.0*10**3,0.0,0.0),0.5])  # Ellipse with ratio 0.5 with major axis on x
         
-        # Check if imported file contains all ellipsis
+        # Check if each predetermined value has an associated imported value
         verified_geometries: int = 0
         for geometry in geometries:
             for ellipse in ellipsis:
-                geometry_values = list(geometry.values())[0]
-                if within_a_percent_tuple(ellipse[0],geometry_values[0]) and within_a_percent_tuple(ellipse[1],geometry_values[1]) and within_a_percent(ellipse[2],geometry_values[2]):
+                geometry_values = geometry[1]
+                if within_a_percent_tuple(ellipse[0],geometry_values[0]) and within_a_percent_tuple(ellipse[1],geometry_values[1]) and within_a_percent(ellipse[2],geometry_values[2][0]):
                     verified_geometries += 1
         self.assertEqual(verified_geometries, 6)
-    def test_Basic_Spline(self):
+    def test_basic_spline(self):
         """
-        Basic Spline only one line in 2D
+        Basic Spline - only one line in 2D
         """
+        # Import 'Basic Spline.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic Spline.dxf")
-        spline = geometries[0].get('SPLINE0')
+
+        # Check if equal to predetermined values
+        spline = geometries[0][1]
         self.assertTrue(spline[0][0],5)  # Degree 5
         self.assertTrue(spline[0][1],1)  # Closed true
         self.assertTrue(spline[0][2],15)  # # Control Points
         self.assertTrue(spline[0+spline[0][1]],21)  # # Knots
         self.assertTrue(spline[1+spline[0][1]],15)  # # Weights
-    def test_Complex_Splines(self):
+    def test_basic_lwpolyline(self):
         """
-        Basic LWPolyline only one line in 2D
+        Basic LWPolyline - only one line in 2D
         """
+        # Import 'Basic LWPolyline.dxf'
         geometries = importer.import_dxf_file("Test Files/Basic LWPolyline.dxf")
-        lwpolyline = geometries[0].get('LWPOLYLINE0')
+
+        # Check if equal to predetermined values
+        lwpolyline = geometries[0][1]
         self.assertTrue(within_a_percent_tuple(lwpolyline[0],(25.0*10**3,0.0,0.0,0.0,0.0)))  # First point (25,0,0)mm
         self.assertTrue(within_a_percent_tuple(lwpolyline[1],(0.0,0.0,0.0,0.0,0.0)))  # First point (25,0,0)mm
         self.assertTrue(within_a_percent_tuple(lwpolyline[2],(0.0,25.0*10**3,0.0,0.0,0.0)))  # First point (25,0,0)mm
