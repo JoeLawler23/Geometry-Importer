@@ -6,17 +6,17 @@ class DXF_Error_Tests(unittest.TestCase):
     """
     Test cases that should produce errors
     """
-    def test_No_File_Found(self):
+    def test_no_file_found(self):
         """
         No file found import_dxf_file throws error
         """
         self.assertRaises(Exception, lambda: importer.import_dxf_file(""))
-    def test_No_Extension(self):
+    def test_no_extension(self):
         """
         File missing extension import_dxf_file throws error
         """
         self.assertRaises(Exception, lambda: importer.export_dxf_file("Test Files/test3",[]))
-    def test_No_Geometries(self):
+    def test_no_geometries(self):
         """
         No passed geometry to export_dxf_file throws error
         """
