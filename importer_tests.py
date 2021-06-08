@@ -290,12 +290,12 @@ class CSV_Error_Tests(unittest.TestCase):
     """
     Test cases that should produce errors
     """
-    def test_No_File_Found(self):
+    def test_no_file_found(self):
         """
         No file found import_csv_file throws error
         """
         self.assertRaises(Exception, lambda: importer.import_csv_file(""))
-    def test_No_Extension(self):
+    def test_no_extension(self):
         """
         File missing extension import_csv_file throws error
         """
@@ -305,34 +305,30 @@ class CSV_Import_Tests(unittest.TestCase):
     """
     Tests for importing csv files
     """
-
-    def test_Basic(self):
+    def test_basic(self):
         """
-        General test, one of each geometry
+        General test - one of each geometry
         """
+        # Import 'test.csv'
         geometries = importer.import_csv_file("Test Files/test.csv")
 
         # POINT
-        self.assertEqual(geometries[0].get('POINT0')[0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[0][1][0],(1.0,2.0,3.0))
 
-        #LINE
-        self.assertEqual(geometries[1].get('LINE1')[0],(1.0,2.0,3.0))
-        self.assertEqual(geometries[1].get('LINE1')[1],(4.0,5.0,6.0))
+        # LINE
+        self.assertEqual(geometries[1][1][0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[1][1][1],(4.0,5.0,6.0))
 
-        #CIRCLE
-        self.assertEqual(geometries[2].get('CIRCLE2')[0],(1.0,2.0,3.0))
-        self.assertEqual(geometries[2].get('CIRCLE2')[1],(4.0))
+        # ARC
+        self.assertEqual(geometries[2][1][0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[2][1][1],(4.0))
+        self.assertEqual(geometries[2][1][2],(5.0))
+        self.assertEqual(geometries[2][1][3],(6.0))
 
-        #ARC
-        self.assertEqual(geometries[3].get('ARC3')[0],(1.0,2.0,3.0))
-        self.assertEqual(geometries[3].get('ARC3')[1],(4.0))
-        self.assertEqual(geometries[3].get('ARC3')[2],(5.0))
-        self.assertEqual(geometries[3].get('ARC3')[3],(6.0))
-
-        #ELLIPSE
-        self.assertEqual(geometries[4].get('ELLIPSE4')[0],(1.0,2.0,3.0))
-        self.assertEqual(geometries[4].get('ELLIPSE4')[1],(4.0,0.0,0.0))
-        self.assertEqual(geometries[4].get('ELLIPSE4')[2],(5.0))
+        # ELLIPSE
+        self.assertEqual(geometries[3][1][0],(1.0,2.0,3.0))
+        self.assertEqual(geometries[3][1][1],(4.0,0.0,0.0))
+        self.assertEqual(geometries[3][1][2],(5.0))
 
 # Verification functions
 
