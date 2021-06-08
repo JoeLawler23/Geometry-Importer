@@ -508,9 +508,8 @@ def import_csv_file(
         List of supported geometries and how they are stored
             POINT: ('POINT#': [LOCATION (X,Y,Z)])
             LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS (#), START ANGLE (#), END ANGLE (#)]) NOTE includes circles
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (#), RATIO OF MINOR TO MAJOR AXIS (#)])
     '''
     # TODO: convert to use 'with' file context
     try:
@@ -536,33 +535,34 @@ def import_csv_file(
     # Loop through all entries
     for row in imported_csv:
         # Get geometry name
-        entry_name = row[1].upper()
+        name = row[1].upper()
 
-        if not entry_name in allowedtypes:
+        # Check if this is an allowed geometry type
+        if allowedtypes and name not in allowedtypes:
             continue
 
         # Create points array for entry's points
         points: List[Tuple[float, ...]] = []
 
         # Format arguments
-        if entry_name == 'POINT':
+        if name == 'POINT':
             points.append(tuple(
                 [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # X,Y,Z
 
-        elif entry_name == 'LINE':
+        elif name == 'LINE':
             points.append(tuple([point*conversion_factor for point in map(
                 float, re.findall(r'\d+.\d+', row[2]))]))  # Start point
             points.append(tuple([point*conversion_factor for point in map(
                 float, re.findall(r'\d+.\d+', row[3]))]))  # End point
 
-        elif entry_name == 'CIRCLE':
+        elif name == 'CIRCLE':
             points.append(tuple(
                 [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
             # Radius TODO assumes degrees
             points.append(
                 (conversion_factor*float(re.findall(r'\d+.\d+', row[3])[0])))
 
-        elif entry_name == 'ARC':
+        elif name == 'ARC' or name == 'CIRCLE':
             points.append(tuple(
                 [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
             points.append(
@@ -570,7 +570,7 @@ def import_csv_file(
             points.append((float(row[4])))  # Start Angle
             points.append((float(row[5])))  # End Angle
 
-        elif entry_name == 'ELLIPSE':
+        elif name == 'ELLIPSE':
             points.append(tuple(
                 [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
             # Length of Major Axis NOTE assumed to be in the x-axis
@@ -579,9 +579,9 @@ def import_csv_file(
 
         # Add entry to geometries
         # what's row[0]?
-        geometries.append((entry_name, points))
+        geometries.append((name, points))
+    
     #end for
-
     file.close()
 
     return geometries
