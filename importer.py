@@ -303,6 +303,9 @@ def export_dxf_file(
     else:
         raise Exception('Invalid Units {}', exportunits) from None
 
+    # Find conversion factor
+    conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(exportunits)+1]
+
     # Get modelspace
     model_space: Modelspace = dxf_drawing.modelspace()
 
@@ -325,34 +328,51 @@ def export_dxf_file(
         if geometry_name == 'POINT':
 
             # Create point from ('POINT:#': [(X,Y,Z)])
-            model_space.add_point(points[0])
+            model_space.add_point(tuple(point*conversion_factor for point in points[0]))
 
         elif geometry_name == 'LINE':
 
             # Create line from ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            model_space.add_line(points[0], points[1])
+            model_space.add_line(
+                tuple(point*conversion_factor for point in points[0]), 
+                tuple(point*conversion_factor for point in points[1])
+                )
 
         elif geometry_name == 'ARC':
 
             # Circle
             if points[1][1] == 0 and points[1][2] == 360:
+
                 # Create circle from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-                model_space.add_circle(points[0],points[1][0])
+                model_space.add_circle(
+                    tuple(point*conversion_factor for point in points[0]),
+                    points[1][0]*conversion_factor
+                    )
 
             else:
                 # Create arc from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-                model_space.add_arc(points[0], points[1][0], points[1][1], points[1][2], True)
+                model_space.add_arc(
+                    tuple(point*conversion_factor for point in points[0]), 
+                    points[1][0]*conversion_factor, 
+                    points[1][1], 
+                    points[1][2], 
+                    True
+                    )
 
         elif geometry_name == 'ELLIPSE':
 
             # Create ellipse from ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            model_space.add_ellipse(points[0], points[1], points[2][0])
+            model_space.add_ellipse(
+                tuple(point*conversion_factor for point in points[0]),
+                tuple(point*conversion_factor for point in points[1]), 
+                points[2][0]
+                )
 
         elif geometry_name == 'SPLINE':
             control_points: Iterable[Vertex] = []
 
             # Convert tuple to iterable of vertices
-            for i in range(points[0][2]): control_points.append(points[i+1])
+            for i in range(points[0][2]): control_points.append(tuple(point*conversion_factor for point in points[i+1]))
 
             # Determine if the spline is open or closed
             if points[0][1] == 1:  
@@ -372,9 +392,13 @@ def export_dxf_file(
             closed: bool = points[-1]
             del points[-1]
             
+            # Convert points to proper units
+            values: List[Tuple[float, ...]] = []
+            for i in range(len(points)): values.append(tuple(point*conversion_factor for point in points[i]))
+
             # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
             model_space.add_lwpolyline(
-                points, 
+                values, 
                 dxfattribs={
                     'closed': closed
                     }
@@ -636,7 +660,7 @@ def export_csv_file(
     Args:
         filename (str): CSV filename with path
         scans (TGeometryList): List of geometries to write to CSV file
-        exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
+        exportunits (str, optional): Units to export CSV in, defaults 'um'=Microns.
         List of Exportable Geometries:
             List of supported geometries and the format
             POINT: ('POINT:#', [(X,Y,Z)])
@@ -648,6 +672,7 @@ def export_csv_file(
     Returns:
         bool: Returns true upon successful completion
     '''
+    
     
     # NOTE will override existing files with the same name
     # Create a csv file if not already created
@@ -762,5 +787,5 @@ def import_file(
 #end def
 
 if __name__ == '__main__':
-    geometry = import_csv_file("Test Files/test.csv",[],'tx')
-    export_csv_file('TEST.dxf',geometry)
+    geometry = import_dxf_file("Test Files/Basic Spline.dxf",[])
+    export_dxf_file('TEST.dxf',geometry,'mm')
