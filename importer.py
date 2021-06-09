@@ -274,8 +274,8 @@ def export_dxf_file(
         Export/create a DXF file from a list of entities
     Args:
         filename (str): DXF filename with path
-        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to DXF file
-        units (int, optional): [description]. Units to export DXF in, defaults 13=Microns.
+        scans (TGeometryList): List of geometries to write to DXF file
+        exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
         List of exportable geometries:
             POINT: ('POINT:#': [(X,Y,Z)])
             LINE: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
