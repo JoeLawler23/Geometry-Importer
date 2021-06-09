@@ -6,6 +6,7 @@ import csv
 import re
 from logging import warning
 from typing import Dict, Iterable, List, Optional, Tuple
+import unittest
 
 import ezdxf
 from ezdxf.document import Drawing
@@ -92,12 +93,12 @@ def import_dxf_file(
     Returns:
         TGeometryList: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
         List of supported geometries and their associated values
-            POINT: ('POINT:#': [(X,Y,Z)])
-            LINE: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            ARC: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE this includes circles
-            ELLIPSE: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            SPLINE: ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
-            LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+            POINT: ('POINT:#', [(X,Y,Z)])
+            LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
+            ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE:#', [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+            LWPOLYLINE: ('LWPOLYLINE:#', POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     '''
     
     # Import file
@@ -134,7 +135,7 @@ def import_dxf_file(
 
         if name == 'POINT':
             # Create point entry: ('POINT:#': [(X,Y,Z)])
-            one_point = (
+            point = (
                 f'POINT:{entity_index}',
                     [
                         tuple([conversion_factor * x for x in entity.dxf.location]),
@@ -142,16 +143,16 @@ def import_dxf_file(
             )
 
             # Add point to geometries
-            geometries.append(one_point)
+            geometries.append(point)
 
         elif name == 'LINE': 
             # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
             line = (
                     f'LINE:{entity_index}',
-                        [
-                            tuple([conversion_factor * x for x in entity.dxf.start.xyz]),
-                            tuple([conversion_factor * x for x in entity.dxf.end.xyz])
-                        ]
+                    [
+                        tuple([conversion_factor * x for x in entity.dxf.start.xyz]),
+                        tuple([conversion_factor * x for x in entity.dxf.end.xyz])
+                    ]
             )
 
             # Add line to geometries
@@ -171,10 +172,10 @@ def import_dxf_file(
             # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
             arc = (
                     f'ARC:{entity_index}',
-                    [
-                        tuple([conversion_factor * x for x in entity.dxf.center.xyz]),
-                        tuple([entity.dxf.radius * conversion_factor, start_angle, end_angle])
-                    ]
+                        [
+                            tuple([conversion_factor * x for x in entity.dxf.center.xyz]),
+                            tuple([entity.dxf.radius * conversion_factor, start_angle, end_angle])
+                        ]
             )
 
             # Add arc to geometries
@@ -184,11 +185,11 @@ def import_dxf_file(
             # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             ellipse = (
                 f'{name}:{entity_index}',
-                [
-                    tuple([conversion_factor * x for x in entity.dxf.center.xyz]),
-                    tuple([conversion_factor * x for x in entity.dxf.major_axis.xyz]),
-                    (entity.dxf.ratio, )
-                ]
+                        [
+                            tuple([conversion_factor * x for x in entity.dxf.center.xyz]),
+                            tuple([conversion_factor * x for x in entity.dxf.major_axis.xyz]),
+                            (entity.dxf.ratio, )
+                        ]
             )
 
             # Add ellipse to geometries
@@ -277,12 +278,12 @@ def export_dxf_file(
         scans (TGeometryList): List of geometries to write to DXF file
         exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
         List of exportable geometries:
-            POINT: ('POINT:#': [(X,Y,Z)])
-            LINE: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            ARC: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE this includes circles
-            ELLIPSE: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            SPLINE: ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
-            LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+            POINT: ('POINT:#', [(X,Y,Z)])
+            LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
+            ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE:#', [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+            LWPOLYLINE: ('LWPOLYLINE:#', POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     Raises:
         Exception: No scans are passed
         Exception: No file extension is passed
@@ -291,6 +292,7 @@ def export_dxf_file(
     Returns:
         bool: True upon successful completion
     '''
+
     # Create DXF file with given filename
     dxf_drawing: Drawing = ezdxf.new('R2010')
 
@@ -396,7 +398,6 @@ def export_dxf_file(
     return True
 #end def
 
-
 def import_txt_file(
     filename: str,
     units: Optional[str] = 'um') -> TGeometryList:
@@ -458,7 +459,6 @@ def import_txt_file(
     return geometries
 #end def
 
-
 def export_txt_file(
     filename: str,
     scans: TGeometryList) -> bool:
@@ -504,7 +504,6 @@ def export_txt_file(
     return True
 #end def
 
-
 def import_csv_file(
     filename: str,
     allowedtypes: List[str] = [],
@@ -515,94 +514,126 @@ def import_csv_file(
     Args:
         filname (str): CSV filename with path
         allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE...),
-        if the list is empty then all types will be imported.
-        units (str, optional): Units to import CSV in, defaults to Microns.
+        NOTE If the list is empty then all types will be imported.
+        units (str, optional): Units to import CSV in, defaults to 'um'=Microns.
     Raises:
         Exception: Passed file name is not found
+        Warning: Passed units are not valid
      Returns:
-        List[Dict [str, List[tuple(float)]]]: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
+        TGeometryList: A list of all geometry names followed by a unique ID # and a list of associated points in 2D/3D, represented in microns and degrees
         List of supported geometries and how they are stored
-            POINT: ('POINT#': [LOCATION (X,Y,Z)])
-            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS (#), START ANGLE (#), END ANGLE (#)]) NOTE includes circles
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH OF MAJOR AXIS (#), RATIO OF MINOR TO MAJOR AXIS (#)])
+            POINT: ('POINT:#', [(X,Y,Z)])
+            LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
+            ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
     '''
-    # TODO: convert to use 'with' file context
-    try:
-        file = open(filename, newline='')
+    
+    with open(filename, newline='') as file:
+
+        # Read file as csv
         imported_csv: csv = csv.reader(file, delimiter=',')
 
-    except FileNotFoundError as error:
-        # Reraise error
-        raise Exception('File Not Found') from error
-    #end try
+        # Attempt to read units param
+        try:
+            unit_index = UNIT_TABLE.index(units)
+        except ValueError:
+            Warning('Passed units are not valid')
+            # Use 'um'
+            unit_index = UNIT_TABLE.index('um')
+        
+        # Use units to generate conversion factor
+        conversion_factor = CONVERSION_FACTORS[unit_index + 1]   
 
-    # Get conversion factor
-    # TODO: handle index error
-    unit_index = UNIT_TABLE.index(units)
-    conversion_factor = CONVERSION_FACTORS[unit_index + 1]
+        # Create empty list for geometries and index
+        geometries: TGeometryList = []
 
-    # Create empty list for geometries and index
-    geometries: TGeometryList = []
+        # Skip first line (it should be a header line)
+        next(imported_csv)
 
-    # Skip first line (it should be a header line)
-    next(imported_csv)
+        # Loop through all entries
+        for index,row in enumerate(imported_csv):
 
-    # Loop through all entries
-    for row in imported_csv:
-        # Get geometry name
-        name = row[1].upper()
+            # Get geometry name
+            name = row[1].upper()
 
-        # Check if this is an allowed geometry type
-        if allowedtypes and name not in allowedtypes:
-            continue
+            # Check if this is an allowed geometry type
+            if allowedtypes and name not in allowedtypes:
+                continue
 
-        # Create points array for entry's points
-        points: List[Tuple[float, ...]] = []
+            # Create points array for entry's points
+            points: TGeometryItem = []
 
-        # Format arguments
-        if name == 'POINT':
-            points.append(tuple(
-                [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # X,Y,Z
+            # Format arguments
+            if name == 'POINT':
+                # Create point entry: ('POINT:#': [(X,Y,Z)])
+                point = (
+                    f'POINT:{index}',
+                        [
+                            tuple([point*conversion_factor for point in map(
+                                float, re.findall(r'\d+.\d+', row[2]))]),
+                        ]
+                )
 
-        elif name == 'LINE':
-            points.append(tuple([point*conversion_factor for point in map(
-                float, re.findall(r'\d+.\d+', row[2]))]))  # Start point
-            points.append(tuple([point*conversion_factor for point in map(
-                float, re.findall(r'\d+.\d+', row[3]))]))  # End point
+                # Add point to geometries
+                geometries.append(point)
 
-        elif name == 'CIRCLE':
-            points.append(tuple(
-                [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
-            # Radius TODO assumes degrees
-            points.append(
-                (conversion_factor*float(re.findall(r'\d+.\d+', row[3])[0])))
+            elif name == 'LINE':
+                # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                line = (
+                        f'LINE:{index}',
+                            [
+                            tuple([point*conversion_factor for point in map(
+                                float, re.findall(r'\d+.\d+', row[2]))]),
+                            tuple([point*conversion_factor for point in map(
+                                float, re.findall(r'\d+.\d+', row[3]))])
+                            ]
+                )
 
-        elif name == 'ARC' or name == 'CIRCLE':
-            points.append(tuple(
-                [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
-            points.append(
-                (conversion_factor*float(re.findall(r'\d+.\d+', row[3])[0])))  # Radius
-            points.append((float(row[4])))  # Start Angle
-            points.append((float(row[5])))  # End Angle
+                # Add line to geometries
+                geometries.append(line)
 
-        elif name == 'ELLIPSE':
-            points.append(tuple(
-                [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
-            # Length of Major Axis NOTE assumed to be in the x-axis
-            points.append(tuple([(float(row[3])), 0.0, 0.0]))
-            points.append((float(row[4])))  # Ratio of Minor to Major Axis
+            elif name == 'ARC':
+                # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                arc = (
+                        f'ARC:{index}',
+                            [
+                                tuple([point*conversion_factor for point in map(
+                                    float, re.findall(r'\d+.\d+', row[2]))]),
+                                tuple([
+                                    conversion_factor*float(re.findall(r'\d+.\d+', row[3])[0]),
+                                    (float(row[4])),
+                                    (float(row[5])),
+                                ])
+                            ]
+                )
 
-        # Add entry to geometries
-        # what's row[0]?
-        geometries.append((name, points))
-    
-    #end for
-    file.close()
+                # Add arc to geometries
+                geometries.append(arc)
+
+            elif name == 'ELLIPSE':
+                points.append(tuple(
+                    [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
+                # Length of Major Axis NOTE assumed to be in the x-axis
+                points.append(tuple([(float(row[3])), 0.0, 0.0]))
+                points.append((float(row[4])))  # Ratio of Minor to Major Axis
+
+                # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+                ellipse = (
+                    f'{name}:{index}',
+                            [
+                                tuple([point*conversion_factor for point in map(
+                                    float, re.findall(r'\d+.\d+', row[2]))]),
+                                tuple([(float(row[3])), 0.0, 0.0]),
+                                float(row[4]),
+                            ]
+                )
+
+                # Add ellipse to geometries
+                geometries.append(ellipse)
+        #end for
 
     return geometries
 # end def
-
 
 def export_csv_file(
     filename: str,
@@ -725,5 +756,5 @@ def import_file(
 #end def
 
 if __name__ == '__main__':
-    geometry = import_dxf_file("Test Files/Basic LWPolyline.dxf")
+    geometry = import_csv_file("Test Files/test.csv",[],'tx')
     export_dxf_file('TEST.dxf',geometry)
