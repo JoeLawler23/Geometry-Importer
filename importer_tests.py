@@ -321,9 +321,7 @@ class CSV_Import_Tests(unittest.TestCase):
 
         # ARC
         self.assertEqual(geometries[2][1][0],(1.0,2.0,3.0))
-        self.assertEqual(geometries[2][1][1],(4.0))
-        self.assertEqual(geometries[2][1][2],(5.0))
-        self.assertEqual(geometries[2][1][3],(6.0))
+        self.assertEqual(geometries[2][1][1],(4.0,5.0,6.0))
 
         # ELLIPSE
         self.assertEqual(geometries[3][1][0],(1.0,2.0,3.0))
