@@ -328,14 +328,14 @@ def export_dxf_file(
         if geometry_name == 'POINT':
 
             # Create point from ('POINT:#': [(X,Y,Z)])
-            model_space.add_point(tuple(point*conversion_factor for point in points[0]))
+            model_space.add_point(tuple(point/conversion_factor for point in points[0]))
 
         elif geometry_name == 'LINE':
 
             # Create line from ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
             model_space.add_line(
-                tuple(point*conversion_factor for point in points[0]), 
-                tuple(point*conversion_factor for point in points[1])
+                tuple(point/conversion_factor for point in points[0]), 
+                tuple(point/conversion_factor for point in points[1])
                 )
 
         elif geometry_name == 'ARC':
@@ -345,15 +345,15 @@ def export_dxf_file(
 
                 # Create circle from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
                 model_space.add_circle(
-                    tuple(point*conversion_factor for point in points[0]),
-                    points[1][0]*conversion_factor
+                    tuple(point/conversion_factor for point in points[0]),
+                    points[1][0]/conversion_factor
                     )
 
             else:
                 # Create arc from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
                 model_space.add_arc(
-                    tuple(point*conversion_factor for point in points[0]), 
-                    points[1][0]*conversion_factor, 
+                    tuple(point/conversion_factor for point in points[0]), 
+                    points[1][0]/conversion_factor, 
                     points[1][1], 
                     points[1][2], 
                     True
@@ -363,8 +363,8 @@ def export_dxf_file(
 
             # Create ellipse from ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             model_space.add_ellipse(
-                tuple(point*conversion_factor for point in points[0]),
-                tuple(point*conversion_factor for point in points[1]), 
+                tuple(point/conversion_factor for point in points[0]),
+                tuple(point/conversion_factor for point in points[1]), 
                 points[2][0]
                 )
 
@@ -372,7 +372,7 @@ def export_dxf_file(
             control_points: Iterable[Vertex] = []
 
             # Convert tuple to iterable of vertices
-            for i in range(points[0][2]): control_points.append(tuple(point*conversion_factor for point in points[i+1]))
+            for i in range(points[0][2]): control_points.append(tuple(point/conversion_factor for point in points[i+1]))
 
             # Determine if the spline is open or closed
             if points[0][1] == 1:  
@@ -394,7 +394,7 @@ def export_dxf_file(
             
             # Convert points to proper units
             values: List[Tuple[float, ...]] = []
-            for i in range(len(points)): values.append(tuple(point*conversion_factor for point in points[i]))
+            for i in range(len(points)): values.append(tuple(point/conversion_factor for point in points[i]))
 
             # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
             model_space.add_lwpolyline(
@@ -638,7 +638,7 @@ def import_csv_file(
                             [
                                 tuple([point*conversion_factor for point in map(
                                     float, re.findall(r'\d+.\d+', row[2]))]),
-                                tuple([(float(row[3])), 0.0, 0.0]),
+                                tuple([(float(row[3])*conversion_factor), 0.0, 0.0]),
                                 tuple([float(row[4])]),
                             ]
                 )
@@ -673,6 +673,13 @@ def export_csv_file(
         bool: Returns true upon successful completion
     '''
     
+    # Set conversion factor
+    if exportunits in UNIT_TABLE:
+        # Set units to passed units
+        conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(exportunits)+1]
+    else:
+        conversion_factor = 1
+        raise Exception('Invalid Units {}', exportunits) from None
     
     # NOTE will override existing files with the same name
     # Create a csv file if not already created
@@ -684,57 +691,56 @@ def export_csv_file(
 
         # Cycle through every geometry from the scans list
         for entry in scans:
-            for entity in entry:
 
                 # Create an empty row
                 row = ['', '', '', '', '', '']
 
                 # Add name and scantype
-                row[0] = entity
-                scantype: str = ''.join([i for i in entity.lower() if not i.isdigit()])
+                row[0] = entry[0]
+                scantype: str = (''.join([i for i in entry[0].lower() if i.isalpha()]))
                 row[1] = scantype
 
                 # Get list of args
-                args = entry.get(entity)
+                args = entry[1]
 
                 # Format according to geometry
                 if scantype == 'point':
 
                     # Add x,y,z coordinate
-                    row[2] = str(args[0])[1:-1]
+                    row[2] = str(tuple(arg/conversion_factor for arg in args[0]))[1:-1]
 
                 elif scantype == 'line':
 
                     # Add start point
-                    row[2] = str(args[0])[1:-1]
+                    row[2] = str(tuple(arg/conversion_factor for arg in args[0]))[1:-1]
 
                     # Add end point
-                    row[3] = str(args[1])[1:-1]
+                    row[3] = str(tuple(arg/conversion_factor for arg in args[1]))[1:-1]
 
                 elif scantype == 'arc':
 
                     # Add center point
-                    row[2] = str(args[0])[1:-1]
+                    row[2] = str(tuple(arg/conversion_factor for arg in args[0]))[1:-1]
 
                     # Add radius
-                    row[3] = args[1]
+                    row[3] = str(args[1][0]/conversion_factor)
 
                     # Add start angle
-                    row[4] = args[2]
+                    row[4] = args[1][1]
 
                     # Add end angle
-                    row[5] = args[3]
+                    row[5] = args[1][2]
 
                 elif scantype == 'ellipse':
 
                     # Add center point
-                    row[2] = str(args[0])[1:-1]
+                    row[2] = str(tuple(arg/conversion_factor for arg in args[0]))[1:-1]
 
                     # Add length of major axis
-                    row[3] = str(args[1])[1:-1]
+                    row[3] = str(args[1][0]/conversion_factor)
 
                     # Add ratio of minor to major
-                    row[4] = args[2]
+                    row[4] = str(args[2])[1:-2]
 
                 else:
                     # Throw a warning when entity is not accounted for
@@ -787,5 +793,5 @@ def import_file(
 #end def
 
 if __name__ == '__main__':
-    geometry = import_dxf_file("Test Files/Basic Spline.dxf",[])
-    export_dxf_file('TEST.dxf',geometry,'mm')
+    geometry = import_csv_file("Test Files/test.csv",[],'mm')
+    export_csv_file('TEST.csv',geometry,'mm')
