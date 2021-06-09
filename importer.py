@@ -560,9 +560,6 @@ def import_csv_file(
             if allowedtypes and name not in allowedtypes:
                 continue
 
-            # Create points array for entry's points
-            points: TGeometryItem = []
-
             # Format arguments
             if name == 'POINT':
                 # Create point entry: ('POINT:#': [(X,Y,Z)])
@@ -611,12 +608,6 @@ def import_csv_file(
                 geometries.append(arc)
 
             elif name == 'ELLIPSE':
-                points.append(tuple(
-                    [point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', row[2]))]))  # Center
-                # Length of Major Axis NOTE assumed to be in the x-axis
-                points.append(tuple([(float(row[3])), 0.0, 0.0]))
-                points.append((float(row[4])))  # Ratio of Minor to Major Axis
-
                 # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
                 ellipse = (
                     f'{name}:{index}',
@@ -624,7 +615,7 @@ def import_csv_file(
                                 tuple([point*conversion_factor for point in map(
                                     float, re.findall(r'\d+.\d+', row[2]))]),
                                 tuple([(float(row[3])), 0.0, 0.0]),
-                                float(row[4]),
+                                tuple([float(row[4])]),
                             ]
                 )
 
@@ -637,87 +628,102 @@ def import_csv_file(
 
 def export_csv_file(
     filename: str,
-    scans: TGeometryList) -> bool:
+    scans: TGeometryList,
+    exportunits: Optional[str] = 'um') -> bool:
     '''
     Summary:
         Creates/Overrides a CSV file with a list of geometries passed
     Args:
         filename (str): CSV filename with path
-        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to CSV file
+        scans (TGeometryList): List of geometries to write to CSV file
+        exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
         List of Exportable Geometries:
             List of supported geometries and the format
-            POINT: ('POINT#': [LOCATION (X,Y,Z)])
-            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [RADIUS (#), CENTER (X,Y,Z), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            POINT: ('POINT:#', [(X,Y,Z)])
+            LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
+            ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
     Raises:
         Warning: Unknown/Unsupported Geometry is passed
     Returns:
         bool: Returns true upon successful completion
     '''
+    
     # NOTE will override existing files with the same name
     # Create a csv file if not already created
-    output_table: csv = csv.writer(
-        open(filename, 'w', newline=''), delimiter=',')
-    output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
+    with open(filename, 'w', newline='') as file:
+        output_table: csv = csv.writer(file, delimiter=',')
 
-    # Cycle through every geometry from the scans list
-    for entry in scans:
-        for entity in entry:
+        # Create header
+        output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
 
-            # Create an empty row
-            row = ['', '', '', '', '', '']
+        # Cycle through every geometry from the scans list
+        for entry in scans:
+            for entity in entry:
 
-            # Add name and scantype
-            row[0] = entity
-            scantype: str = ''.join(
-                [i for i in entity.lower() if not i.isdigit()])
-            row[1] = scantype
+                # Create an empty row
+                row = ['', '', '', '', '', '']
 
-            # Get list of args
-            args = entry.get(entity)
+                # Add name and scantype
+                row[0] = entity
+                scantype: str = ''.join([i for i in entity.lower() if not i.isdigit()])
+                row[1] = scantype
 
-            # Format according to geometry
-            if scantype == 'point':
-                # Add x,y,z coordinate
-                row[2] = str(args[0])[1:-1]
-            elif scantype == 'line':
-                # Add start point
-                row[2] = str(args[0])[1:-1]
-                # Add end point
-                row[3] = str(args[1])[1:-1]
-            elif scantype == 'circle':
-                # Add center point
-                row[2] = str(args[0])[1:-1]
-                # Add radius
-                row[3] = args[1]
-            elif scantype == 'arc':
-                # Add center point
-                row[2] = str(args[0])[1:-1]
-                # Add radius
-                row[3] = args[1]
-                # Add start angle
-                row[4] = args[2]
-                # Add end angle
-                row[5] = args[3]
-            elif scantype == 'ellipse':
-                # Add center point
-                row[2] = str(args[0])[1:-1]
-                # Add length of major axis
-                row[3] = str(args[1])[1:-1]
-                # Add ratio of minor to major
-                row[4] = args[2]
-            else:
-                warning('Unsupported geometry')
+                # Get list of args
+                args = entry.get(entity)
 
-            # Add row to the table
-            output_table.writerow(row)
+                # Format according to geometry
+                if scantype == 'point':
+
+                    # Add x,y,z coordinate
+                    row[2] = str(args[0])[1:-1]
+
+                elif scantype == 'line':
+
+                    # Add start point
+                    row[2] = str(args[0])[1:-1]
+
+                    # Add end point
+                    row[3] = str(args[1])[1:-1]
+
+                elif scantype == 'arc':
+
+                    # Add center point
+                    row[2] = str(args[0])[1:-1]
+
+                    # Add radius
+                    row[3] = args[1]
+
+                    # Add start angle
+                    row[4] = args[2]
+
+                    # Add end angle
+                    row[5] = args[3]
+
+                elif scantype == 'ellipse':
+
+                    # Add center point
+                    row[2] = str(args[0])[1:-1]
+
+                    # Add length of major axis
+                    row[3] = str(args[1])[1:-1]
+
+                    # Add ratio of minor to major
+                    row[4] = args[2]
+
+                else:
+                    # Throw a warning when entity is not accounted for
+                    warning('Unsupported geometry')
+                # end if
+
+                # Add row to the table
+                output_table.writerow(row)
+
+            # end for
 
     # Return true upon successful
     return True
 #end def
-
 
 def import_file(
     filename: str,
@@ -757,4 +763,4 @@ def import_file(
 
 if __name__ == '__main__':
     geometry = import_csv_file("Test Files/test.csv",[],'tx')
-    export_dxf_file('TEST.dxf',geometry)
+    export_csv_file('TEST.dxf',geometry)
