@@ -12,12 +12,11 @@ from ezdxf.document import Drawing
 from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
-from ezdxf.math.bspline import knots_from_parametrization
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.0.0'
 
-CONVESION_FACTORS = (
+CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)
     3.9370079*10**5,  # 1 = Inches
     3.2808399*10**6,  # 2 = Feet
@@ -119,7 +118,7 @@ def import_dxf_file(
 
     # Get conversion factor to nanometers
     units = dxf_drawing.units
-    conversion_factor: float = CONVESION_FACTORS[units]
+    conversion_factor: float = CONVERSION_FACTORS[units]
 
     # Create empty list of geometries
     geometries: TGeometryList = []
@@ -217,11 +216,11 @@ def import_dxf_file(
             # Create weights if necessary
             if len(entity.weights) == 0:
                 for point in range(len(entity.control_points)):
-                    weights += (1.0)
+                    weights += (1.0,)
             else:
                 for point in range(len(entity.control_points)):
-                    weights += (entity.weights,)
-            points.append(knots)
+                    weights += (entity.weights[point],)
+            points.append(weights)
 
             # Create spline entry: ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
             spline = (
@@ -278,13 +277,12 @@ def export_dxf_file(
         scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to DXF file
         units (int, optional): [description]. Units to export DXF in, defaults 13=Microns.
         List of exportable geometries:
-            List of supported geometries and the format
-            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            CIRCLE: ('CIRCLE#': [CENTER (X,Y,Z), RADIUS (#), PLANE (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#), PLANE (X,Y,Z)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE  OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
-            LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+            POINT: ('POINT:#': [(X,Y,Z)])
+            LINE: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE this includes circles
+            ELLIPSE: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+            LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
     Raises:
         Exception: No scans are passed
         Exception: No file extension is passed
@@ -299,7 +297,7 @@ def export_dxf_file(
     # Set output units
     if exportunits in UNIT_TABLE:
         # Set units to passed units
-        dxf_drawing.units = exportunits
+        dxf_drawing.units = UNIT_TABLE.index(exportunits)
     else:
         raise Exception('Invalid Units {}', exportunits) from None
 
@@ -312,61 +310,79 @@ def export_dxf_file(
 
     # Add each entitiy in the passed list
     for entry in scans:
-        for entity in entry:
-            name = entity  # Name of geometry
-            # Truncate name to just include the geometry
-            geometry_name: str = ''.join([i for i in name if not i.isdigit()])
 
-            # List to store geometry
-            points: List[Tuple[float, ...]] = entry.get(name)
+        # Name of geometry
+        name = entry[0]  
 
-            # Add geometry in proper format
-            if geometry_name == 'CIRCLE':
-                # Center, Radius, Attributes
-                model_space.add_circle(points[0], points[1], dxfattribs={
-                                       'extrusion': points[2]})
+        # Truncate name to just include the geometry
+        geometry_name: str = ''.join([i for i in name if i.isalpha()])
 
-            elif geometry_name == 'LINE':
-                # Start point, End point
-                model_space.add_line(points[0], points[1])
+        # List to store geometry
+        points: List[Tuple[float, ...]] = entry[1]
 
-            elif geometry_name == 'ARC':
-                # Center, Radius, Start Angle, End Angle, IsCounterClockwise, Attributes
-                model_space.add_arc(points[0], points[1][0], points[1][1], points[1][2], True, dxfattribs={
-                                    'extrusion': points[2]})
+        if geometry_name == 'POINT':
 
-            elif geometry_name == 'ELLIPSE':
-                # Center, Length Major Axis, Ratio from Minor Axis to Major Axis
-                model_space.add_ellipse(points[0], points[1], points[2],)
+            # Create point from ('POINT:#': [(X,Y,Z)])
+            model_space.add_point(points[0])
 
-            elif geometry_name == 'SPLINE':
-                control_points: Iterable[Vertex] = []
+        elif geometry_name == 'LINE':
 
-                # Convert list of tuples to iterable of vertices
-                for i in range(points[0][2]):
-                    control_points.append(points[i+1])
+            # Create line from ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+            model_space.add_line(points[0], points[1])
 
-                if points[0][1] == 1:  # Determine if the spline is open or closed
-                    # Control Points, Weights, Degree, Knots
-                    model_space.add_rational_spline(
-                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
-                else:
-                    # Control Points, Weights, Degree, Knots
-                    model_space.add_closed_rational_spline(
-                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+        elif geometry_name == 'ARC':
 
-            elif geometry_name == 'LWPOLYLINE':
-                closed: bool = points[-1]
-                del points[-1]
-                # Points, Format = 'xyseb' by default, Attributes
-                model_space.add_lwpolyline(
-                    points, dxfattribs={'closed': closed})
+            # Circle
+            if points[1][1] == 0 and points[1][2] == 360:
+                # Create circle from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                model_space.add_circle(points[0],points[1][0])
 
             else:
-                # Throw a warning when entity is not accounted for
-                warning('UNKNOWN GEOMETRY: '+geometry_name)
-            #end if
-        #end for
+                # Create arc from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                model_space.add_arc(points[0], points[1][0], points[1][1], points[1][2], True)
+
+        elif geometry_name == 'ELLIPSE':
+
+            # Create ellipse from ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            model_space.add_ellipse(points[0], points[1], points[2][0])
+
+        elif geometry_name == 'SPLINE':
+            control_points: Iterable[Vertex] = []
+
+            # Convert tuple to iterable of vertices
+            for i in range(points[0][2]): control_points.append(points[i+1])
+
+            # Determine if the spline is open or closed
+            if points[0][1] == 1:  
+
+                # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+                model_space.add_rational_spline(
+                    control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+            else:
+
+                # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+                model_space.add_closed_rational_spline(
+                    control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+
+        elif geometry_name == 'LWPOLYLINE':
+
+            # Get and remove closed boolean
+            closed: bool = points[-1]
+            del points[-1]
+            
+            # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+            model_space.add_lwpolyline(
+                points, 
+                dxfattribs={
+                    'closed': closed
+                    }
+                )
+
+        else:
+
+            # Throw a warning when entity is not accounted for
+            warning('UNKNOWN GEOMETRY: '+geometry_name)
+        #end if
     #end for
 
     # Catch filename with no extension and raise an error
@@ -376,7 +392,7 @@ def export_dxf_file(
     # Save DXF file
     dxf_drawing.saveas(filename)
 
-    # Returns True if successful
+    # Return True if successful
     return True
 #end def
 
@@ -413,7 +429,7 @@ def import_txt_file(
 
     # Get conversion factor
     unit_index = UNIT_TABLE.index(units)
-    conversion_factor = CONVESION_FACTORS[unit_index + 1]
+    conversion_factor = CONVERSION_FACTORS[unit_index + 1]
 
     # Loop through all lines
     for line in lines:
@@ -524,7 +540,7 @@ def import_csv_file(
     # Get conversion factor
     # TODO: handle index error
     unit_index = UNIT_TABLE.index(units)
-    conversion_factor = CONVESION_FACTORS[unit_index + 1]
+    conversion_factor = CONVERSION_FACTORS[unit_index + 1]
 
     # Create empty list for geometries and index
     geometries: TGeometryList = []
@@ -707,3 +723,7 @@ def import_file(
         raise Exception('Filetype Unknown')
         # end if
 #end def
+
+if __name__ == '__main__':
+    geometry = import_dxf_file("Test Files/Basic LWPolyline.dxf")
+    export_dxf_file('TEST.dxf',geometry)
