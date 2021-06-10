@@ -811,6 +811,3 @@ def import_file(
         # end if
 #end def
 
-if __name__ == '__main__':
-    geometry = import_txt_file("Test Files/text_2d.txt",'mm')
-    export_txt_file('TEST.txt',geometry)
