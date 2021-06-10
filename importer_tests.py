@@ -243,12 +243,12 @@ class TXT_Error_Tests(unittest.TestCase):
     """
     Test cases that should produce errors
     """
-    def test_No_File_Found(self):
+    def test_no_file_found(self):
         """
         No file found import_txt_file throws error
         """
         self.assertRaises(Exception, lambda: importer.import_txt_file(""))
-    def test_No_Extension(self):
+    def test_no_extension(self):
         """
         File missing extension import_txt_file throws error
         """
@@ -258,28 +258,28 @@ class TXT_Import_Tests(unittest.TestCase):
     """
     Tests for importing txt files
     """
-    def test_2D_Point(self):
+    def test_2d_point(self):
         """
         One 2D point
         """
         geometries = importer.import_txt_file("Test Files/text_2d.txt")
-        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2))
-    def test_3D_Point(self):
+        self.assertEqual(geometries[0][1],(1.1,2.2))
+    def test_3d_point(self):
         """
         One 3D point
         """
         geometries = importer.import_txt_file("Test Files/text_3d.txt",)
-        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
-    def test_Various_Percision(self):
+        self.assertEqual(geometries[0][1],(1.1,2.2,3.3))
+    def test_various_percision(self):
         """
         Varying percision of points
         """
         geometries = importer.import_txt_file("Test Files/text_precision.txt")
-        self.assertEqual(geometries[0].get('POINT0'),(1.1,2.2,3.3))
-        self.assertEqual(geometries[1].get('POINT1'),(1.11,2.22,3.33))
-        self.assertEqual(geometries[2].get('POINT2'),(1.111,2.222,3.333))
-        self.assertEqual(geometries[3].get('POINT3'),(1.1111,2.2222,3.3333))
-    def test_No_Points(self):
+        self.assertEqual(geometries[0][1],(1.1,2.2,3.3))
+        self.assertEqual(geometries[1][1],(1.11,2.22,3.33))
+        self.assertEqual(geometries[2][1],(1.111,2.222,3.333))
+        self.assertEqual(geometries[3][1],(1.1111,2.2222,3.3333))
+    def test_no_points(self):
         """
         No points
         """
@@ -326,7 +326,7 @@ class CSV_Import_Tests(unittest.TestCase):
         # ELLIPSE
         self.assertEqual(geometries[3][1][0],(1.0,2.0,3.0))
         self.assertEqual(geometries[3][1][1],(4.0,0.0,0.0))
-        self.assertEqual(geometries[3][1][2],(5.0))
+        self.assertEqual(geometries[3][1][2],(5.0,))
 
 # Verification functions
 
