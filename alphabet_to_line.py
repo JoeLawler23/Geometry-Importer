@@ -311,7 +311,9 @@ LETTERS_NUMBERS: Dict[str,TGeometryList] = {
       ),
 }
 
-def create_letter(letter: str, scans: TGeometryList):
+def create_letter(
+      letter: str, 
+      scans: TGeometryList):
       '''
       Generate a list of lines from a DXF file representing a letter made only from lines
       Meant to be pasted into the LETTERS_NUMBERS dictionary as an entry
