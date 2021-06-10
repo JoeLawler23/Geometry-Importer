@@ -2,6 +2,9 @@ from typing import List, Tuple
 import unittest
 import importer
 
+__author__ = 'Joseph Lawler'
+__version__ = '1.1.0'
+
 class DXF_Error_Tests(unittest.TestCase):
     """
     Test cases that should produce errors

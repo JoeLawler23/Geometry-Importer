@@ -15,7 +15,7 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 
 __author__ = 'Joseph Lawler'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)

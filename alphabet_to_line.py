@@ -2,6 +2,9 @@ from typing import Dict, List, Tuple
 import importer
 import os
 
+__author__ = 'Joseph Lawler'
+__version__ = '1.1.0'
+
 # Define type for containing geometry elements
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
