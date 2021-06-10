@@ -434,53 +434,53 @@ def import_txt_file(
     Raises:
         Exception: Passed file name is not found
     Returns:
-        List[Dict [str, List[Tuple[float,...]]]]: A list of points followed by a unique ID # and a list of associated values in 2D/3D
+        TGeometryList: A list of points followed by a unique ID # and a list of associated values in 2D/3D
         List of supported geometries and how they are stored
-            POINT: ('POINT#': [LOCATION (X,Y,Z)])
+            POINT: ('POINT:#', [(X,Y,Z)])
     '''
+    
     # Import text file
-    # TODO: convert to use 'with' file context
-    try:
-        file = open(filename)
-        lines: List[str] = file.readlines()
-    except FileNotFoundError as error:
-        # Reraise error
-        raise Exception('File Not Found') from error
-    #end try
+    with open(filename, newline='') as file:
+        points: List[str] = file.readlines()
 
-    # Create empty list for geometries and index
-    geometries: TGeometryList = []
-    geometries_index = 0
+        # Create empty list for geometries and index
+        geometries: TGeometryList = []
+        geometries_index = 0
 
-    # Get conversion factor
-    unit_index = UNIT_TABLE.index(units)
-    conversion_factor = CONVERSION_FACTORS[unit_index + 1]
+        # Get conversion factor
+        unit_index = UNIT_TABLE.index(units)
+        conversion_factor = CONVERSION_FACTORS[unit_index + 1]
 
-    # Loop through all lines
-    for line in lines:
-        # Remove newline character
-        line = line.rstrip('\n')
+        # Loop through all points
+        for point in points:
 
-        # Determine if line is a valid point
-        valid_3d_point = re.fullmatch(r'\d+.\d+,\d+.\d+,\d+.\d+', line)
-        valid_2d_point = re.fullmatch(r'\d+.\d+,\d+.\d+', line)
+            # Remove newline character
+            point = point.rstrip('\n')
+            point = point.rstrip('\r')
 
-        if valid_3d_point or valid_2d_point:
-            # Get points, convert to float, multiply by conversion factor
-            points: Tuple[float] = tuple(
-                point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', line)))
+            # Determine if line is a valid point
+            valid_3d_point = re.fullmatch(r'\d+.\d+,\d+.\d+,\d+.\d+', point)
+            valid_2d_point = re.fullmatch(r'\d+.\d+,\d+.\d+', point)
 
-            # Add to geometries
-            geometries.append({'POINT'+str(geometries_index): points})
+            if valid_3d_point or valid_2d_point:
 
-            # Increase index
-            geometries_index += 1
+                # Get points, convert to float, multiply by conversion factor
+                points: Tuple[float] = tuple(
+                    point*conversion_factor for point in map(float, re.findall(r'\d+.\d+', point))
+                )
 
-    # Close text file
-    file.close()
+                # Create point entry: ('POINT:#', [(X,Y,Z)])
+                point_entry = (f'POINT:{geometries_index}',points)
 
-    # Return list of geometries
-    return geometries
+                # Add point to geometries
+                geometries.append(point_entry)
+
+                # Increase index
+                geometries_index += 1
+            #end if
+
+        # Return list of geometries
+        return geometries
 #end def
 
 def export_txt_file(
@@ -491,7 +491,7 @@ def export_txt_file(
         Creates/Overrides a TXT file with a list of points passed
     Args:
         filename (str): TXT filename with path
-        scans (List[Dict [str, List[Tuple[float,...]]]]): List of geometries to write to TXT file
+        scans (TGeometryList): List of geometries to write to TXT file
         List of Exportable Geometries:
             List of supported geometries and the format
             POINT: #.#,#.#,#.#
@@ -500,29 +500,32 @@ def export_txt_file(
     Returns:
         bool: Returns true upon successful completion
     '''
+    
     # Create a new textfile if one does not already exist
     # NOTE will override existing files with the same name
     text_file = open(filename, 'w+')
 
     # Cycle through every geometry from the scans list
     for entry in scans:
-        for entity in entry:
+        
+         # Get the point's values
+         name = (''.join([i for i in entry[0].lower() if i.isalpha()]))
+         point = entry[1]
+         output: str = ''
+        
+        # Point
+         if name == 'point':
 
-            # Get the point's x,y,(z)
-            point = entry.get(entity)
-            output: str = ''
+             # Generate formatted string based on point
+             output = str(point)[1:-1]
 
-            if entity[0:-1].lower() == 'point':
-                # Generate formatted string based on point
-                output = str(point[0])[1:-1]
-            else:
-                warning('Unsupported geometry')
+         else:
 
-            # Write to text file with newline
-            text_file.write(output+'\n')
+             # Warning on unsupported geometry
+             warning('Unsupported geometry')
 
-    # Close text_file
-    text_file.close()
+         # Write to text file with newline
+         text_file.write(output+'\n')
 
     # Return true upon successful completion
     return True
@@ -531,15 +534,17 @@ def export_txt_file(
 def import_csv_file(
     filename: str,
     allowedtypes: List[str] = [],
-    units: Optional[str] = 'um') -> TGeometryList:
+    units: Optional[str] = 'um',
+    header: Optional[bool] = True) -> TGeometryList:
     '''
     Summary:
         Imports and formats geometries from a csv file
     Args:
         filname (str): CSV filename with path
-        allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE...),
+        allowedtypes (List[str]): List of allowed geometry types (eg. POINT, LINE...),
         NOTE If the list is empty then all types will be imported.
         units (str, optional): Units to import CSV in, defaults to 'um'=Microns.
+        header (bool, optional): Flag to remove header line
     Raises:
         Exception: Passed file name is not found
         Warning: Passed units are not valid
@@ -571,8 +576,9 @@ def import_csv_file(
         # Create empty list for geometries and index
         geometries: TGeometryList = []
 
-        # Skip first line (it should be a header line)
-        next(imported_csv)
+        if header:
+            # Skip first line (it should be a header line)
+            next(imported_csv)
 
         # Loop through all entries
         for index,row in enumerate(imported_csv):
@@ -653,7 +659,8 @@ def import_csv_file(
 def export_csv_file(
     filename: str,
     scans: TGeometryList,
-    exportunits: Optional[str] = 'um') -> bool:
+    exportunits: Optional[str] = 'um',
+    header: Optional[bool] = True) -> bool:
     '''
     Summary:
         Creates/Overrides a CSV file with a list of geometries passed
@@ -661,6 +668,7 @@ def export_csv_file(
         filename (str): CSV filename with path
         scans (TGeometryList): List of geometries to write to CSV file
         exportunits (str, optional): Units to export CSV in, defaults 'um'=Microns.
+        header (bool, optional): Flag to add header line
         List of Exportable Geometries:
             List of supported geometries and the format
             POINT: ('POINT:#', [(X,Y,Z)])
@@ -686,8 +694,9 @@ def export_csv_file(
     with open(filename, 'w', newline='') as file:
         output_table: csv = csv.writer(file, delimiter=',')
 
-        # Create header
-        output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
+        if header:
+            # Create header
+            output_table.writerow(['name', 'scantype', 'arg1', 'arg2', 'arg3', 'arg4'])
 
         # Cycle through every geometry from the scans list
         for entry in scans:
@@ -793,5 +802,5 @@ def import_file(
 #end def
 
 if __name__ == '__main__':
-    geometry = import_csv_file("Test Files/test.csv",[],'mm')
-    export_csv_file('TEST.csv',geometry,'mm')
+    geometry = import_txt_file("Test Files/text_2d.txt",'mm')
+    export_txt_file('TEST.txt',geometry)
