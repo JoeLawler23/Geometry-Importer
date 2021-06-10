@@ -485,13 +485,15 @@ def import_txt_file(
 
 def export_txt_file(
     filename: str,
-    scans: TGeometryList) -> bool:
+    scans: TGeometryList,
+    exportunits: Optional[str] = 'um') -> bool:
     '''
     Summary:
         Creates/Overrides a TXT file with a list of points passed
     Args:
         filename (str): TXT filename with path
         scans (TGeometryList): List of geometries to write to TXT file
+        exportunits (str, optional): Units to export TXT in, defaults to Microns.
         List of Exportable Geometries:
             List of supported geometries and the format
             POINT: #.#,#.#,#.#
@@ -501,6 +503,14 @@ def export_txt_file(
         bool: Returns true upon successful completion
     '''
     
+    # Set conversion factor
+    if exportunits in UNIT_TABLE:
+        # Set units to passed units
+        conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(exportunits)+1]
+    else:
+        conversion_factor = 1
+        raise Exception('Invalid Units {}', exportunits) from None
+
     # Create a new textfile if one does not already exist
     # NOTE will override existing files with the same name
     text_file = open(filename, 'w+')
@@ -517,7 +527,7 @@ def export_txt_file(
          if name == 'point':
 
              # Generate formatted string based on point
-             output = str(point)[1:-1]
+             output = str(tuple(point/conversion_factor for point in point[0]))[1:-1]
 
          else:
 
