@@ -277,12 +277,22 @@ def export_dxf_file(
         scans (TGeometryList): List of geometries to write to DXF file
         exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
         List of exportable geometries:
+<<<<<<< HEAD
             POINT: ('POINT:#', [(X,Y,Z)])
             LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
             ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
             ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE:#', [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
             LWPOLYLINE: ('LWPOLYLINE:#', POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+=======
+            List of supported geometries and the format
+            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
+            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE  OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
+            LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+
+>>>>>>> 34050bf49cbffef79d29edb113b303c046538856
     Raises:
         Exception: No scans are passed
         Exception: No file extension is passed
