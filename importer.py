@@ -5,8 +5,7 @@ Module for importing and exporting DXF/CSV/TXT files
 import csv
 import re
 from logging import warning
-from typing import Dict, Iterable, List, Optional, Tuple
-import unittest
+from typing import Iterable, List, Optional, Tuple
 
 import ezdxf
 from ezdxf.document import Drawing
