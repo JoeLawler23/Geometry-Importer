@@ -64,7 +64,7 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
     # Units passed will be treated as nanometers
 
     for arc in scans:
-        values = scans.get(arc)
+        values = list(arc.values())[0]
         center = values[0]
         radius = values[1][0]
         start_angle = values[1][1]
@@ -109,7 +109,7 @@ def arc_to_lines(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: 
 
     return lines
 
-# NOT STABLE
+
 def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> List[Dict[str, List[Tuple[float, ...]]]]:
     
     #num segments denotes the number of arcs
@@ -147,7 +147,6 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
 
             x:float = radius*math.cos(math.radians(theta)) # Convert to cartesian
             y:float = radius*math.sin(math.radians(theta)) # Convert to cartesian
-            print('{0},{1},{2}'.format(round(x,10),round(y,10),round(theta,10)))  # DEBUGGING
             points.append([x+center[0], y+center[1], center[2]])  # Add point with center offset
 
         # Find arc that encompasses 2 points
@@ -181,45 +180,10 @@ def ellipse_to_arcs(scans: List[Dict[str, List[Tuple[float, ...]]]], num_segment
             end_angle: float
             x: float = round(cx,3)
             y: float = round(cy,3)
-            start_angle = (math.degrees(math.atan((p1y+cy)/(p1x-cx))))
-            end_angle = math.degrees(math.atan((p3y+cy)/(p3x-cx)))
-
-            if p1x > 0 and p1y > 0: # Quadrant 1 Start
-                start_angle = math.degrees(math.atan((p1y-cy)/(p1x-cx)))
-            elif p1x < 0 and p1y > 0: # Quadrant 2 Start
-                start_angle = 180 + -1*math.degrees(math.atan((p1y+cy)/(p1x-cx)))
-            elif p1x < 0 and p1y < 0: # Quadrant 3 Start
-                start_angle = 90 + (90 - math.degrees(math.atan((p1y-cy)/(p1x+cx))))
-            elif p1x > 0 and p1y < 0: # Quadrant 4 Start
-                start_angle = -1*start_angle
-            elif p1x == 0:
-                print
-            elif p1y == 0:
-                start_angle = -1*(math.degrees(math.atan((p1y+cy)/(p1x-cx))))
-            
-            if p3x > 0 and p3y > 0: # Quadrant 1 End
-                end_angle = 180 + math.degrees(math.atan((p3y-cy)/(p3x-cx)))
-            elif p3x < 0 and p3y > 0: # Quadrant 2 End
-                end_angle = 180 - math.degrees(math.atan((p3y+cy)/(p3x-cx)))
-            elif p3x < 0 and p3y < 0: # Quadrant 3 End
-                end_angle = math.degrees(math.atan((p3y-cy)/(p3x-cx)))
-            elif p3x > 0 and p3y < 0: # Quadrant 4 End
-                end_angle = end_angle
-            elif p3x == 0:
-                print
-            elif p3y == 0:
-                end_angle = (180 + math.degrees(math.atan((p3y-cy)/(p3x-cx)))) - 180
+            start_angle = (math.degrees(math.atan2((p1y-cy),(p1x-cx))))
+            end_angle = math.degrees(math.atan2((p3y-cy),(p3x-cx)))
             
             arcs.append({'ARC'+str(i):(tuple([cx/conversion_factor,cy/conversion_factor,0]),tuple([radius/conversion_factor,start_angle,end_angle]))})
-            print
-
-        # FIND ARC STEPS:
-        # 0. CONVERT TO POLAR
-        # 1. Given two points on the ellipse find the midpoint between them
-        # 2. Find the tangent line of that midpoint using derivative
-        # 3. Now you have 3 points that define a circle
-        # 4. Using those 3 points u can solve for center x,y
-
 
     return arcs
     
