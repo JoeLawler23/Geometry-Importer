@@ -6,12 +6,14 @@ import csv
 import re
 from logging import warning
 from typing import Iterable, List, Optional, Tuple
+import geometry_to_line
 
 import ezdxf
 from ezdxf.document import Drawing
 from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
-from ezdxf.math import Vertex
+from ezdxf.math import Vertex # TODO check on this and make sure its correct
+
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.1.0'
@@ -76,16 +78,44 @@ UNIT_TABLE = (
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
 
+def get_hifi_geometry(
+    geometry: str,
+    allowedtypes: List[str]) -> str:
+    '''
+    Return the highest fidelity geometry given a list of geometries for a specific geometry type
+
+    Args:
+        geometry (str): geometry type to search below
+        allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE, ...)
+
+    Returns:
+        str: highest fidelity geometry from allowedtypes list
+    '''
+
+    geometries: Tuple[str] = ['POINT','LINE','ARC','ELLIPSE','SPLINE','LWPOLYLINE']
+
+    # Run through all geometries lower than the passed geometry
+    for index in range((geometries.index(geometry)-1),-1,-1):
+
+        # Return first geometry that is in allowed types below geometry
+        if geometries[index] in allowedtypes: return geometries[index]
+
+    # No geometry was found
+    return []
+#end def
+
 def import_dxf_file(
     filename: str,
-    allowedtypes: List[str] = []) -> TGeometryList:
+    allowedtypes: List[str] = [],
+    convert: Optional[bool] = False) -> TGeometryList:
     '''
     Summary:
         Import a DXF file and returning a list of entities
     Args:
         filename (str): filename of DXF file to read
-        allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE, ...),
+        allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE, ...)
         NOTE If the list is empty then all types will be imported.
+        convert (bool, optional): flag for whether to convert non-allowed geometry types to allowable geometry types
     Raises:
         Exception: Passed file name is not found, corrupt, or not a DXF file
         Warning: Unknown Geometry is found
@@ -125,12 +155,13 @@ def import_dxf_file(
 
     # Cycle through all entities
     for entity_index, entity in enumerate(entities):
+
         # Entity name
         name: str = entity.DXFTYPE
 
-        # Check if this is an allowed geometry type
-        if allowedtypes and name not in allowedtypes:
-            continue
+        # # Check if this is an allowed geometry type
+        # if allowedtypes and name not in allowedtypes:
+        #     continue
 
         if name == 'POINT':
             # Create point entry: ('POINT:#': [(X,Y,Z)])
@@ -154,8 +185,26 @@ def import_dxf_file(
                     ]
             )
 
-            # Add line to geometries
-            geometries.append(line)
+            # If line is an allowed type or allowedtypes was not set
+            if name in allowedtypes or not allowedtypes:
+
+                # Add line to geometries
+                geometries.append(line)
+
+             # If convert flag is set and point is a valid type to be converted to
+            elif convert and 'POINT' in allowedtypes:
+
+                # Convert ellipse geometry to a TGeometryList
+                given_geometry_list: TGeometryList = []
+                given_geometry_list.append(line)
+
+                # Down-convert line geometry to point
+                line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+
+                # TODO Add offset to ellipse_converted geometries #
+
+                # Add converted geometry to geometries
+                geometries.append(line_converted)
 
         elif name == 'ARC' or name == 'CIRCLE':  # Group Arc and Cirlces from dxf into one type internally
             
@@ -177,10 +226,29 @@ def import_dxf_file(
                         ]
             )
 
-            # Add arc to geometries
-            geometries.append(arc)
+            # If line is an allowed type or allowedtypes was not set
+            if name in allowedtypes or not allowedtypes:
+
+                # Add line to geometries
+                geometries.append(arc)
+
+             # If convert flag is set and point is a valid type to be converted to
+            elif convert and get_hifi_geometry(name,allowedtypes):
+
+                # Convert ellipse geometry to a TGeometryList
+                given_geometry_list: TGeometryList = []
+                given_geometry_list.append(arc)
+
+                # Down-convert line geometry to point
+                arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+
+                # TODO Add offset to ellipse_converted geometries #
+
+                # Add converted geometry to geometries
+                geometries.append(arc_converted)
 
         elif name == 'ELLIPSE':
+
             # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             ellipse = (
                 f'{name}:{entity_index}',
@@ -191,8 +259,26 @@ def import_dxf_file(
                         ]
             )
 
-            # Add ellipse to geometries
-            geometries.append(ellipse)
+            # If ellipse is an allowed type or allowedtypes was not set
+            if name in allowedtypes or not allowedtypes:
+                
+                # Add ellipse to geometries
+                geometries.append(ellipse) 
+
+            # If convert flag is set and there exists a geometry for ellipse to be converted to
+            elif convert and get_hifi_geometry(name,allowedtypes):
+
+                # Convert ellipse geometry to a TGeometryList
+                given_geometry_list: TGeometryList = []
+                given_geometry_list.append(ellipse)
+
+                # Down-convert ellipse geometry to next highest fidelity geometry
+                ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
+
+                # TODO Add offset to ellipse_converted geometries #
+
+                # Add converted geometry to geometries
+                geometries.append(ellipse_converted)
 
         elif name == 'SPLINE':
 
@@ -277,22 +363,12 @@ def export_dxf_file(
         scans (TGeometryList): List of geometries to write to DXF file
         exportunits (str, optional): Units to export DXF in, defaults 'um'=Microns.
         List of exportable geometries:
-<<<<<<< HEAD
             POINT: ('POINT:#', [(X,Y,Z)])
             LINE: ('LINE:#', [START (X,Y,Z), END (X,Y,Z)])
             ARC: ('ARC:#', [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)]) NOTE Includes circles
             ELLIPSE: ('ELLIPSE:#', [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             SPLINE: ('SPLINE:#', [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
             LWPOLYLINE: ('LWPOLYLINE:#', POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
-=======
-            List of supported geometries and the format
-            LINE: ('LINE#': [START (X,Y,Z), END (X,Y,Z)])
-            ARC: ('ARC#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-            ELLIPSE: ('ELLIPSE#': [CENTER (X,Y,Z), LENGTH/PLANE  OF MAJOR AXIS (X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            SPLINE: ('SPLINE#': [DEGREE, CLOSED, # CONTROL POINTS (#,BOOLEAN,#), CONTROL POINT(S) (X,Y,Z), KNOTS (#,...), WEIGHTS (#,...)])
-            LWPOLYLINE: ('LWPOLYLINE#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
-
->>>>>>> 34050bf49cbffef79d29edb113b303c046538856
     Raises:
         Exception: No scans are passed
         Exception: No file extension is passed
@@ -318,106 +394,107 @@ def export_dxf_file(
     # Get modelspace
     model_space: Modelspace = dxf_drawing.modelspace()
 
-    # Check to make sure that scans is not null
+    # Check to make sure that scans is not null TODO update for list of null geometries
     if len(scans) == 0:
         raise Exception('Scans contains no objects') from None
 
     # Add each entitiy in the passed list
     for entry in scans:
+        for values in entry:
 
-        # Name of geometry
-        name = entry[0]  
+            # Name of geometry
+            name = values[0]  
 
-        # Truncate name to just include the geometry
-        geometry_name: str = ''.join([i for i in name if i.isalpha()])
+            # Truncate name to just include the geometry
+            geometry_name: str = ''.join([i for i in name if i.isalpha()])
 
-        # List to store geometry
-        points: List[Tuple[float, ...]] = entry[1]
+            # List to store geometry
+            points: List[Tuple[float, ...]] = values[1]
 
-        if geometry_name == 'POINT':
+            if geometry_name == 'POINT':
 
-            # Create point from ('POINT:#': [(X,Y,Z)])
-            model_space.add_point(tuple(point/conversion_factor for point in points[0]))
+                # Create point from ('POINT:#': [(X,Y,Z)])
+                model_space.add_point(tuple(point/conversion_factor for point in points[0]))
 
-        elif geometry_name == 'LINE':
+            elif geometry_name == 'LINE':
 
-            # Create line from ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            model_space.add_line(
-                tuple(point/conversion_factor for point in points[0]), 
-                tuple(point/conversion_factor for point in points[1])
-                )
-
-        elif geometry_name == 'ARC':
-
-            # Circle
-            if points[1][1] == 0 and points[1][2] == 360:
-
-                # Create circle from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-                model_space.add_circle(
-                    tuple(point/conversion_factor for point in points[0]),
-                    points[1][0]/conversion_factor
-                    )
-
-            else:
-                # Create arc from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-                model_space.add_arc(
+                # Create line from ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                model_space.add_line(
                     tuple(point/conversion_factor for point in points[0]), 
-                    points[1][0]/conversion_factor, 
-                    points[1][1], 
-                    points[1][2], 
-                    True
+                    tuple(point/conversion_factor for point in points[1])
                     )
 
-        elif geometry_name == 'ELLIPSE':
+            elif geometry_name == 'ARC':
 
-            # Create ellipse from ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
-            model_space.add_ellipse(
-                tuple(point/conversion_factor for point in points[0]),
-                tuple(point/conversion_factor for point in points[1]), 
-                points[2][0]
-                )
+                # Circle
+                if points[1][1] == 0 and points[1][2] == 360:
 
-        elif geometry_name == 'SPLINE':
-            control_points: Iterable[Vertex] = []
+                    # Create circle from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                    model_space.add_circle(
+                        tuple(point/conversion_factor for point in points[0]),
+                        points[1][0]/conversion_factor
+                        )
 
-            # Convert tuple to iterable of vertices
-            for i in range(points[0][2]): control_points.append(tuple(point/conversion_factor for point in points[i+1]))
+                else:
+                    # Create arc from ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                    model_space.add_arc(
+                        tuple(point/conversion_factor for point in points[0]), 
+                        points[1][0]/conversion_factor, 
+                        points[1][1], 
+                        points[1][2], 
+                        True
+                        )
 
-            # Determine if the spline is open or closed
-            if points[0][1] == 1:  
+            elif geometry_name == 'ELLIPSE':
 
-                # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
-                model_space.add_rational_spline(
-                    control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+                # Create ellipse from ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+                model_space.add_ellipse(
+                    tuple(point/conversion_factor for point in points[0]),
+                    tuple(point/conversion_factor for point in points[1]), 
+                    points[2][0]
+                    )
+
+            elif geometry_name == 'SPLINE':
+                control_points: Iterable[Vertex] = []
+
+                # Convert tuple to iterable of vertices
+                for i in range(points[0][2]): control_points.append(tuple(point/conversion_factor for point in points[i+1]))
+
+                # Determine if the spline is open or closed
+                if points[0][1] == 1:  
+
+                    # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+                    model_space.add_rational_spline(
+                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+                else:
+
+                    # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+                    model_space.add_closed_rational_spline(
+                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+
+            elif geometry_name == 'LWPOLYLINE':
+
+                # Get and remove closed boolean
+                closed: bool = points[-1]
+                del points[-1]
+
+                # Convert points to proper units
+                values: List[Tuple[float, ...]] = []
+                for i in range(len(points)): values.append(tuple(point/conversion_factor for point in points[i]))
+
+                # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+                model_space.add_lwpolyline(
+                    values, 
+                    dxfattribs={
+                        'closed': closed
+                        }
+                    )
+
             else:
 
-                # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
-                model_space.add_closed_rational_spline(
-                    control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
-
-        elif geometry_name == 'LWPOLYLINE':
-
-            # Get and remove closed boolean
-            closed: bool = points[-1]
-            del points[-1]
-            
-            # Convert points to proper units
-            values: List[Tuple[float, ...]] = []
-            for i in range(len(points)): values.append(tuple(point/conversion_factor for point in points[i]))
-
-            # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
-            model_space.add_lwpolyline(
-                values, 
-                dxfattribs={
-                    'closed': closed
-                    }
-                )
-
-        else:
-
-            # Throw a warning when entity is not accounted for
-            warning('UNKNOWN GEOMETRY: '+geometry_name)
-        #end if
+                # Throw a warning when entity is not accounted for
+                warning('UNKNOWN GEOMETRY: '+geometry_name)
+            #end if
     #end for
 
     # Catch filename with no extension and raise an error
