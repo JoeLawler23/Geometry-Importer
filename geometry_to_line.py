@@ -2,6 +2,9 @@ from logging import warning
 from typing import List, Tuple
 import math
 
+__author__ = 'Joseph Lawler'
+__version__ = '1.1.0'
+
 CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)
     3.9370079*10**5,  # 1 = Inches
@@ -56,6 +59,8 @@ UNIT_TABLE = (
     'usyd',  # US Survey Yard
     'usmi',  # US Survey Mile
 )
+
+# FIXME FIX SEGMENT_LENGTH implementation
 
 # Default conversion parameter
 NUM_SEGMENTS = 10
@@ -296,7 +301,6 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
     # Arc index
     arc_index: int = 0
 
-    # TODO check with mulitple ellipses
     # Run through all given ellipses
     for ellipse in given_ellipsis:
 
@@ -325,7 +329,7 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
             # Calculate angle length from num_segments
             angle = (360/num_segments)/2 
 
-        elif segment_length: # FIXME Segment length implementation
+        elif segment_length:
 
             # Circumfrance of Ellipse
             # = 2*PI*sqrt((a^2 + b^2)/2)
@@ -338,7 +342,7 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
             # Calculate angle length from segment_length
             angle = (segment_length/circumfrance) * 360
 
-            # TODO Calculate the number of segments 
+            # Calculate the number of segments 
             # num_segments = 
 
         else:
@@ -400,7 +404,6 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
             end_angle = math.degrees(math.atan2((p3y-cy),(p3x-cx)))
             
             # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
-            # TODO make sure to fix indexes at the end
             arc = (
                     f'ARC:{arc_index}',
                         [
@@ -422,6 +425,30 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
     return arcs
 #end def
     
+def lwpolyline_to_arcs_lines(given_lwpolyline: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um')-> TGeometryList:
+
+    # Create modelspace
+    # Create lwpolyline entity
+    # Use explode method to create arc and lines from lwpolyline
+    # Convert to my format
+
+    # lwpolylinw = model_space.entity_space.entities
+    # lsdf = lwpolylinw[0].explode()
+    # print
+    print
+
+def spline_to_lines(given_lwpolyline: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um')-> TGeometryList:
+
+    # Create modelspace
+    # Create lwpolyline entity
+    # Use flatten method to create lines from spline
+    # Convert to my format
+
+    # spl = model_space.entity_space.entities
+    # sasdfa = spl[0].flattening(0.10)
+    # print
+    print
+
 def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, min_length: float = 0, units: str = 'um') -> TGeometryList:
     '''
     Wrapper function to down convert any given geometry to a sub-geometry type
@@ -454,13 +481,19 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
 
     elif given_geometry_type == 'ELLIPSE':  
         
-        # Ellipses can only directly be down converted into arcs
+        # Ellipses can only be directly converted into arcs
         return convert_to('ARC', return_geometry_type, ellipse_to_arcs(given_geometry, num_segments, min_length, units))
+
+    elif given_geometry_type == 'LWPOLYLINE':
+
+        # LWPolylines are directly converted to arcs and lines
+        return convert_to('ARC', return_geometry_type, lwpolyline_to_arcs_lines(given_geometry, num_segments, min_length, units))
+
+    elif given_geometry_type == 'SPLINE':
+
+        # LWPolylines are directly converted to arcs and lines
+        return convert_to('LINE', return_geometry_type, spline_to_lines(given_geometry, num_segments, min_length, units))
 
     #end if
 #end def
 
-
-# FUNCTIONS TO ADD
-# def spline_to ?
-# def lwpolyline_to ?
