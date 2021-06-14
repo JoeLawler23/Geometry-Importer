@@ -93,6 +93,39 @@ def get_hifi_geometry(
 
     geometries: Tuple[str] = ['POINT','LINE','ARC','ELLIPSE','SPLINE','LWPOLYLINE']
 
+    # Special Case for SPLINE
+    if geometry == 'SPLINE':
+
+        # SPLINE -> LINES -> POINTS
+        # If line is an exceptable geometry
+        if 'LINE' in geometries:
+
+            return 'LINE'
+        
+        # If point is an exceptable geometry
+        elif 'POINT' in geometries:
+
+            return 'POINT'
+    
+    # Special Case for LWPOLYLINE
+    if geometry == 'LWPOLYLINE':
+
+        # LWPOLYLINE -> ARCS/LINES -> LINES -> POINTS
+        # If arc and line are expectable geometries
+        if 'ARC' in geometries and 'LINE' in geometries:
+
+            return 'ARC'
+        
+        # If only line is an exceptable geometry
+        elif 'ARC' not in geometries and 'LINE' in geometries:
+
+            return 'LINE'
+
+        # If only point is an exceptable geometry
+        elif 'POINT' in geometries:
+
+            return 'POINT'
+
     # Run through all geometries lower than the passed geometry
     for index in range((geometries.index(geometry)-1),-1,-1):
 
@@ -201,9 +234,10 @@ def import_dxf_file(
                 line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
 
                 # Add converted geometry to geometries
-                geometries.append(line_converted)
+                for geometry in line_converted:
+                    geometries.append(geometry)
 
-        elif name == 'ARC' or name == 'CIRCLE':  # Group Arc and Cirlces from dxf into one type internally
+        elif name == 'ARC' or name == 'CIRCLE':  # NOTE Arc and Cirlces from dxf into one type internally
             
             # Set angles
             if name == 'CIRCLE':  # CIRCLE
@@ -241,7 +275,8 @@ def import_dxf_file(
 
 
                 # Add converted geometry to geometries
-                geometries.append(arc_converted)
+                for geometry in arc_converted:
+                    geometries.append(geometry)
 
         elif name == 'ELLIPSE':
 
@@ -272,7 +307,8 @@ def import_dxf_file(
                 ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
 
                 # Add converted geometry to geometries
-                geometries.append(ellipse_converted)
+                for geometry in ellipse_converted:
+                    geometries.append(geometry)
 
         elif name == 'SPLINE':
 
@@ -331,6 +367,26 @@ def import_dxf_file(
             lwpolyline = (
                 f'{name}:{entity_index}', points
             )
+
+             # If ellipse is an allowed type or allowedtypes was not set
+            if name in allowedtypes or not allowedtypes:
+                
+                # Add ellipse to geometries
+                geometries.append(lwpolyline) 
+
+            # If convert flag is set and there exists a geometry for ellipse to be converted to
+            elif convert and get_hifi_geometry(name,allowedtypes):
+
+                # Convert ellipse geometry to a TGeometryList
+                given_geometry_list: TGeometryList = []
+                given_geometry_list.append(lwpolyline)
+
+                # Down-convert ellipse geometry to next highest fidelity geometry TODO remove 100 param
+                ellipse_converted = geometry_to_line.convert_to('LWPOLYLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
+
+                # Add converted geometry to geometries
+                geometries.append(ellipse_converted)
+
 
             # Add spline to geometries
             geometries.append(lwpolyline)
@@ -396,14 +452,14 @@ def export_dxf_file(
     for entry in scans:
         for values in entry:
 
-            # Name of geometry
-            name = values[0]  
+            # Name of geometry TODO may be an issue with grabbing first letter vs entire word
+            name = entry[0]  
 
             # Truncate name to just include the geometry
             geometry_name: str = ''.join([i for i in name if i.isalpha()])
 
             # List to store geometry
-            points: List[Tuple[float, ...]] = values[1]
+            points: List[Tuple[float, ...]] = entry[1]
 
             if geometry_name == 'POINT':
 
@@ -459,12 +515,20 @@ def export_dxf_file(
 
                     # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
                     model_space.add_rational_spline(
-                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+                        control_points, 
+                        points[points[0][2]+2], 
+                        points[0][0], 
+                        points[points[0][2]+1]
+                        )
                 else:
 
                     # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
                     model_space.add_closed_rational_spline(
-                        control_points, points[points[0][2]+2], points[0][0], points[points[0][2]+1])
+                        control_points, 
+                        points[points[0][2]+2], 
+                        points[0][0], 
+                        points[points[0][2]+1]
+                        )
 
             elif geometry_name == 'LWPOLYLINE':
 
