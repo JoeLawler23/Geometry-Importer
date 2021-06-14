@@ -12,7 +12,7 @@ import ezdxf
 from ezdxf.document import Drawing
 from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
-from ezdxf.math import Vertex # TODO check on this and make sure its correct
+from ezdxf.math import Vertex
 
 
 __author__ = 'Joseph Lawler'
@@ -72,7 +72,6 @@ UNIT_TABLE = (
     'usyd',  # US Survey Yard
     'usmi',  # US Survey Mile
 )
-
 
 # Define type for containing geometry elements
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
@@ -201,8 +200,6 @@ def import_dxf_file(
                 # Down-convert line geometry to point
                 line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
 
-                # TODO Add offset to ellipse_converted geometries #
-
                 # Add converted geometry to geometries
                 geometries.append(line_converted)
 
@@ -242,7 +239,6 @@ def import_dxf_file(
                 # Down-convert line geometry to point
                 arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list)
 
-                # TODO Add offset to ellipse_converted geometries #
 
                 # Add converted geometry to geometries
                 geometries.append(arc_converted)
@@ -274,8 +270,6 @@ def import_dxf_file(
 
                 # Down-convert ellipse geometry to next highest fidelity geometry
                 ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
-
-                # TODO Add offset to ellipse_converted geometries #
 
                 # Add converted geometry to geometries
                 geometries.append(ellipse_converted)
