@@ -1,9 +1,8 @@
 from logging import warning
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 import math
 
-# TODO convert over to new format
-CONVESION_FACTORS: List[float] = [
+CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)
     3.9370079*10**5,  # 1 = Inches
     3.2808399*10**6,  # 2 = Feet
@@ -29,34 +28,34 @@ CONVESION_FACTORS: List[float] = [
     3.9370079*10**5,  # 22 = US Survey Inch
     1.093613*10**6,  # 23 = US Survey Yard
     6.2137119*10**10  # 24 = US Survey Mile
-]
+)
 
-UNIT_TABLE: Dict[str, int] = {
-    'in': 1,  # Inches
-    'ft': 2,  # Feet
-    'mi': 3,  # Miles
-    'mm': 4,  # Milimeters
-    'cm': 5,  # Centimeters
-    'm': 6,  # Meters
-    'km': 7,  # Kilometers
-    'ui': 8,  # Microinches
-    'mil': 9,  # Mils
-    'yd': 10,  # Yards
-    'a': 11,  # Angstroms
-    'nm': 12,  # Nanometers
-    'um': 13,  # Microns
-    'dm': 14,  # Decimeters
-    'dam': 15,  # Decameters
-    'hm': 16,  # Hectometers
-    'gm': 17,  # Gigameters
-    'au': 18,  # Astronomical units
-    'ly': 19,  # Light years
-    'pc': 20,  # Parsecs
-    'usft': 22,  # US Survey Feet
-    'usin': 23,  # US Survey Inch
-    'usyd': 24,  # US Survey Yard
-    'usmi': 25  # US Survey Mile
-}
+UNIT_TABLE = (
+    'in',  # Inches  (value = 1)
+    'ft',  # Feet
+    'mi',  # Miles
+    'mm',  # Milimeters
+    'cm',  # Centimeters
+    'm',  # Meters
+    'km',  # Kilometers
+    'ui',  # Microinches
+    'mil',  # Mils
+    'yd',  # Yards
+    'a',  # Angstroms
+    'nm',  # Nanometers
+    'um',  # Microns
+    'dm',  # Decimeters
+    'dam',  # Decameters
+    'hm',  # Hectometers
+    'gm',  # Gigameters
+    'au',  # Astronomical units
+    'ly',  # Light years
+    'pc',  # Parsecs
+    'usft',  # US Survey Feet
+    'usin',  # US Survey Inch
+    'usyd',  # US Survey Yard
+    'usmi',  # US Survey Mile
+)
 
 # Default conversion parameter
 NUM_SEGMENTS = 10
@@ -74,13 +73,17 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
         num_segments (float, optional): Number of points to convert the given arc into. Defaults to 0.
         segment_length (float, optional): Length between points. Defaults to 0.
         units (str, optional): Units of segment_length. Defaults to 'um'.
-
+    Raises:
+        Warning: Invalid units
     Returns:
         TGeometryList: List of points generated from given lines
     """
 
     # Generated Points
     points: TGeometryList = []
+
+    # Point index
+    point_index: int = 0
 
     # Run through all given lines
     for line in given_lines:
@@ -90,8 +93,13 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
         start_point = values[0]
         end_point = values[1]
 
-        # Find conversion factor
-        conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
+        # Set conversion factor
+        if units in UNIT_TABLE:
+            # Set units to passed units
+            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+        else:
+            conversion_factor = 1
+            raise Exception('Invalid Units {}', units) from None
 
         # Create points based on number of segments desired
         if num_segments:
@@ -129,11 +137,14 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
 
             # Create point entry: ('POINT:#': [(X,Y,Z)])
             point = (
-                f'POINT:{index}',
+                f'POINT:{point_index}',
                     [
                         tuple([x,y,0.0]),
                     ]
             )
+
+            # Update point_index
+            point_index += 1
 
             # Add point to points
             points.append(point)
@@ -151,13 +162,17 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
         num_segments (float, optional): Number of lines to convert the given arc into. Defaults to 0.
         segment_length (float, optional): Length of the lines to convert the given arc into. Defaults to 0.
         units (str, optional): Units of segment_length. Defaults to 'um'.
-
+    Raises:
+        Warning: Invalid units
     Returns:
         TGeometryList: List of lines generated from given arcs
     """
     
     # Generated Lines
     lines: TGeometryList = [] 
+
+    # Line index
+    line_index: int = 0
     
     # Run through all given arcs
     for arc in given_arcs:
@@ -173,8 +188,13 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
         # Points
         points: List[Tuple[float, ...]] = []
 
-        # Find conversion factor
-        conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
+        # Set conversion factor
+        if units in UNIT_TABLE:
+            # Set units to passed units
+            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+        else:
+            conversion_factor = 1
+            raise Exception('Invalid Units {}', units) from None
 
         # Create lines based on number of segments desired
         if num_segments > 2:
@@ -182,7 +202,7 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
             # Calc segment angle based on num_segments
             segment_angle = degree/(num_segments)  
 
-        # Create lines based on minimum line length
+        # Create lines based on minimum line length TODO add catch for too long segment length
         elif segment_length > 0:
 
             # Calc segment angle based on min_length
@@ -217,13 +237,16 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
 
             # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
             line = (
-                    f'LINE:{index}',
+                    f'LINE:{line_index}',
                     [
                         tuple([conversion_factor * x for x in points[index]]),
                         tuple([conversion_factor * x for x in points[index+1]])
                     ]
             )
             
+            # Update line_index
+            line_index += 1
+
             # Add line to lines
             lines.append(line)
         #end for
@@ -233,12 +256,15 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
 
             # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
             line = (
-                    f'LINE:{index}',
+                    f'LINE:{line_index}',
                     [
                         tuple([conversion_factor * x for x in points[num_segments]]),
                         tuple([conversion_factor * x for x in points[0]])
                     ]
             )
+            
+            #Update line_index
+            line_index += 1
             
             # Add line to lines
             lines.append(line)
@@ -259,12 +285,16 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
     Raises:
         Warning: Segment length > circumfrance
         Warning: Divide by zero error
+        Warning: Invalid units
     Returns:
         TGeometryList: List of arcs generated from given ellipse
     '''
 
     # List of arcs that will be generated
     arcs: TGeometryList = []
+
+    # Arc index
+    arc_index: int = 0
 
     # TODO check with mulitple ellipses
     # Run through all given ellipses
@@ -282,8 +312,13 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
         # Define angle to create points list from
         angle: float = []
 
-        # Find conversion factor
-        conversion_factor: float = CONVESION_FACTORS[UNIT_TABLE[units]]
+        # Set conversion factor
+        if units in UNIT_TABLE:
+            # Set units to passed units
+            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+        else:
+            conversion_factor = 1
+            raise Exception('Invalid Units {}', units) from None
 
         if num_segments:
 
@@ -367,12 +402,15 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
             # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
             # TODO make sure to fix indexes at the end
             arc = (
-                    f'ARC:{index}',
+                    f'ARC:{arc_index}',
                         [
                             tuple([cx/conversion_factor,cy/conversion_factor,0]),
                             tuple([radius/conversion_factor,start_angle,end_angle])
                         ]
             )
+            
+            # Update arc_index
+            arc_index += 1
 
             # Add arc to list of arcs
             arcs.append(arc)
@@ -400,19 +438,29 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
     '''
 
     if given_geometry_type == return_geometry_type:
+
+        # No need to convert
         return given_geometry
-    elif given_geometry_type == 'LINE': # Lines can only be directly converted into points
+
+    elif given_geometry_type == 'LINE': 
+        
+        # Lines can only be directly converted into points
         return convert_to('POINT', return_geometry_type, lines_to_points(given_geometry, num_segments, min_length, units))
-    elif given_geometry_type == 'ARC':  # Arcs can only be directly converted into lines
+
+    elif given_geometry_type == 'ARC':  
+        
+        # Arcs can only be directly converted into lines
         return convert_to('LINE', return_geometry_type, arc_to_lines(given_geometry, num_segments, min_length, units))
-    elif given_geometry_type == 'ELLIPSE':  # Ellipses can only directly be down converted into arcs
+
+    elif given_geometry_type == 'ELLIPSE':  
+        
+        # Ellipses can only directly be down converted into arcs
         return convert_to('ARC', return_geometry_type, ellipse_to_arcs(given_geometry, num_segments, min_length, units))
+
+    #end if
+#end def
 
 
 # FUNCTIONS TO ADD
-# def convert DONE
-# def arc_to_lines DONE
-# def ellipse_to_arc DONE
 # def spline_to ?
 # def lwpolyline_to ?
-# def lines_to_points DONE
