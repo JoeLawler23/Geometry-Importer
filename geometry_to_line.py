@@ -72,7 +72,6 @@ NUM_SEGMENTS = 10
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
 
-# FIXME error when converting spline to point, has to do with slope too jagged
 def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
     """
     Convert lines to a series of point geometries
@@ -183,7 +182,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                 if slope_type == 'NONE':
 
                     # Calculate next point for a normal slope
-                    x = start_point[0] + x_difference*index*(-1 if (start_point[1] - end_point[1]) > 0 else -1)
+                    x = start_point[0] + x_difference*index
                     y = x*slope + y_intercept
 
                 elif slope_type == 'HORIZONTAL':
