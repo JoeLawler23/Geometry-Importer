@@ -14,7 +14,6 @@ from ezdxf.entitydb import EntitySpace
 from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 
-
 __author__ = 'Joseph Lawler'
 __version__ = '1.1.0'
 
@@ -136,11 +135,13 @@ def get_hifi_geometry(
     return []
 #end def
 
-# TODO add convert params
 def import_dxf_file(
     filename: str,
     allowedtypes: List[str] = [],
-    convert: Optional[bool] = False) -> TGeometryList:
+    convert: Optional[bool] = False,
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    segment_units: str = 'um') -> TGeometryList:
     '''
     Summary:
         Import a DXF file and returning a list of entities
@@ -149,6 +150,9 @@ def import_dxf_file(
         allowedtypes (List[str]): list of allowed geometry types (eg. POINT, LINE, ...)
         NOTE If the list is empty then all types will be imported.
         convert (bool, optional): flag for whether to convert non-allowed geometry types to allowable geometry types
+        num_segments (float, optional): Number of segments to divide given geometry into to produce the return geometry. Defaults to 0.
+        segment_length (float, optional): Length of segments to divide given geometry into to produce return geometry. Defaults to 0.
+        units (str, optional): Units for segment length. Defaults to 'um'.
     Raises:
         Exception: Passed file name is not found, corrupt, or not a DXF file
         Warning: Unknown Geometry is found
@@ -196,7 +200,7 @@ def import_dxf_file(
         # if allowedtypes and name not in allowedtypes:
         #     continue
 
-        if name == 'POINT':
+        if name == 'POINT' and (allowedtypes == [] or name in allowedtypes):
             # Create point entry: ('POINT:#': [(X,Y,Z)])
             point = (
                 f'POINT:{entity_index}',
@@ -232,7 +236,7 @@ def import_dxf_file(
                 given_geometry_list.append(line)
 
                 # Down-convert line geometry to point
-                line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+                line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
 
                 # Add converted geometry to geometries
                 for geometry in line_converted:
@@ -272,7 +276,7 @@ def import_dxf_file(
                 given_geometry_list.append(arc)
 
                 # Down-convert arc geometry
-                arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+                arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
 
                 # Add converted geometry to geometries
                 for geometry in arc_converted:
@@ -304,7 +308,7 @@ def import_dxf_file(
                 given_geometry_list.append(ellipse)
 
                 # Down-convert ellipse geometry to next highest fidelity geometry
-                ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+                ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
 
                 # Add converted geometry to geometries
                 for geometry in ellipse_converted:
@@ -357,7 +361,7 @@ def import_dxf_file(
                 given_geometry_list.append(spline)
 
                 # Down-convert ellipse geometry to next highest fidelity geometry
-                spline_converted = geometry_to_line.convert_to('SPLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+                spline_converted = geometry_to_line.convert_to('SPLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
 
                 # Add converted geometry to geometries
                 for geometry in spline_converted:
@@ -399,7 +403,7 @@ def import_dxf_file(
                 given_geometry_list.append(lwpolyline)
 
                 # Down-convert ellipse geometry to next highest fidelity geometry
-                lwpolyline_converted = geometry_to_line.convert_to('LWPOLYLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+                lwpolyline_converted = geometry_to_line.convert_to('LWPOLYLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
 
                 # Add converted geometry to geometries
                 for geometry in lwpolyline_converted:
@@ -700,13 +704,15 @@ def export_txt_file(
     return True
 #end def
 
-# TODO add convert params
-# TODO add convert procedures
 def import_csv_file(
     filename: str,
     allowedtypes: List[str] = [],
     units: Optional[str] = 'um',
-    header: Optional[bool] = True) -> TGeometryList:
+    header: Optional[bool] = True,
+    convert: Optional[bool] = False,
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    segment_units: str = 'um') -> TGeometryList:
     '''
     Summary:
         Imports and formats geometries from a csv file
@@ -716,6 +722,10 @@ def import_csv_file(
         NOTE If the list is empty then all types will be imported.
         units (str, optional): Units to import CSV in, defaults to 'um'=Microns.
         header (bool, optional): Flag to remove header line
+        convert (bool, optional): flag for whether to convert non-allowed geometry types to allowable geometry types
+        num_segments (float, optional): Number of segments to divide given geometry into to produce the return geometry. Defaults to 0.
+        segment_length (float, optional): Length of segments to divide given geometry into to produce return geometry. Defaults to 0.
+        units (str, optional): Units for segment length. Defaults to 'um'.
     Raises:
         Exception: Passed file name is not found
         Warning: Passed units are not valid
@@ -757,12 +767,8 @@ def import_csv_file(
             # Get geometry name
             name = row[1].upper()
 
-            # Check if this is an allowed geometry type
-            if allowedtypes and name not in allowedtypes:
-                continue
-
             # Format arguments
-            if name == 'POINT':
+            if name == 'POINT' and (allowedtypes == [] or name in allowedtypes):
                 # Create point entry: ('POINT:#': [(X,Y,Z)])
                 point = (
                     f'POINT:{index}',
@@ -787,10 +793,28 @@ def import_csv_file(
                             ]
                 )
 
-                # Add line to geometries
-                geometries.append(line)
+                # If line is an allowed type or allowedtypes was not set
+                if name in allowedtypes or not allowedtypes:
+
+                    # Add line to geometries
+                    geometries.append(line)
+
+                 # If convert flag is set and point is a valid type to be converted to
+                elif convert and 'POINT' in allowedtypes:
+
+                    # Convert ellipse geometry to a TGeometryList
+                    given_geometry_list: TGeometryList = []
+                    given_geometry_list.append(line)
+
+                    # Down-convert line geometry to point
+                    line_converted = geometry_to_line.convert_to('LINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
+
+                    # Add converted geometry to geometries
+                    for geometry in line_converted:
+                        geometries.append(geometry)
 
             elif name == 'ARC':
+                
                 # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
                 arc = (
                         f'ARC:{index}',
@@ -805,8 +829,25 @@ def import_csv_file(
                             ]
                 )
 
-                # Add arc to geometries
-                geometries.append(arc)
+                # If arc is an allowed type or allowedtypes was not set
+                if name in allowedtypes or not allowedtypes:
+
+                    # Add line to geometries
+                    geometries.append(arc)
+
+                 # If convert flag is set and point is a valid type to be converted to
+                elif convert and get_hifi_geometry(name,allowedtypes):
+
+                    # Convert arc geometry to a TGeometryList
+                    given_geometry_list: TGeometryList = []
+                    given_geometry_list.append(arc)
+
+                    # Down-convert arc geometry
+                    arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
+
+                    # Add converted geometry to geometries
+                    for geometry in arc_converted:
+                        geometries.append(geometry)
 
             elif name == 'ELLIPSE':
                 # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
@@ -820,8 +861,30 @@ def import_csv_file(
                             ]
                 )
 
-                # Add ellipse to geometries
-                geometries.append(ellipse)
+                # If ellipse is an allowed type or allowedtypes was not set
+                if name in allowedtypes or not allowedtypes:
+
+                    # Add ellipse to geometries
+                    geometries.append(ellipse) 
+
+                # If convert flag is set and there exists a geometry for ellipse to be converted to
+                elif convert and get_hifi_geometry(name,allowedtypes):
+
+                    # Convert ellipse geometry to a TGeometryList
+                    given_geometry_list: TGeometryList = []
+                    given_geometry_list.append(ellipse)
+
+                    # Down-convert ellipse geometry to next highest fidelity geometry
+                    ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,num_segments,segment_length,segment_units)
+
+                    # Add converted geometry to geometries
+                    for geometry in ellipse_converted:
+                        geometries.append(geometry)
+        
+            else:
+                # Throw a warning when entity is not accounted for
+                warning(f'UNKNOWN GEOMETRY: {name}') 
+            #end if
         #end for
 
     return geometries
