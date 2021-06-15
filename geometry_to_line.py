@@ -620,12 +620,13 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
     return arcs_lines
 #end def
 
-def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
+def spline_to_lines(given_spline: TGeometryList, num_segments: float = 0)-> TGeometryList:
     """
     Convert spline into a list of lines
 
     Args:
         given_spline (TGeometryList): Given spline
+        num_segments (float, optional): Number of arcs to convert the given ellipse into. Defaults to 0.
 
     Returns:
         TGeometryList: List of lines that represent the given geometry
@@ -677,7 +678,7 @@ def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
 
         # Use dxf explode method to create arc and lines from lwpolyline
         dxf_spline = model_space.entity_space.entities[0]
-        spline_iter =  dxf_spline.flattening(10) # TODO change this to a passed param
+        spline_iter =  dxf_spline.flattening(num_segments)
         spline_points: TGeometryList = []
 
         # Convert from iter[Vec] to tuple[float,...]
@@ -727,20 +728,21 @@ def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
     return lines
 #end def
 
-def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, min_length: float = 0, units: str = 'um') -> TGeometryList:
-    '''
+def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
+    """
     Wrapper function to down convert any given geometry to a sub-geometry type
 
     Args:
         given_geometry_type (str): Geometry type of passed values
         return_geometry_type (str): Desired geometry type
-        given_geometry (Dict[str, List[Tuple[float, ...]]]): Geometry to be converted values
-        num_segments (float): Number of segments to divide given geometry into to produce the return geometry
-        min_length (float): Minimum length of segments to divide given geometry into to produce return geometry
+        given_geometry (TGeometryList): Geometry to be converted values
+        num_segments (float, optional): Number of segments to divide given geometry into to produce the return geometry. Defaults to 0.
+        segment_length (float, optional): Length of segments to divide given geometry into to produce return geometry. Defaults to 0.
+        units (str, optional): Units for segment length. Defaults to 'um'.
 
     Returns:
-        TGeometryList: Desired geometry type values
-    '''
+        TGeometryList: Desired geometry type return values
+    """
 
     if given_geometry_type == return_geometry_type:
 
@@ -750,12 +752,12 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
     elif given_geometry_type == 'LINE': 
         
         # Lines can only be directly converted into points
-        return convert_to('POINT', return_geometry_type, lines_to_points(given_geometry, num_segments, min_length, units))
+        return convert_to('POINT', return_geometry_type, lines_to_points(given_geometry, num_segments, segment_length, units))
 
     elif given_geometry_type == 'ARC':  
         
         # Arcs can only be directly converted into lines
-        return convert_to('LINE', return_geometry_type, arc_to_lines(given_geometry, num_segments, min_length, units))
+        return convert_to('LINE', return_geometry_type, arc_to_lines(given_geometry, num_segments, segment_length, units))
 
     elif given_geometry_type == 'ELLIPSE':  
         
