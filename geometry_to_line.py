@@ -3,7 +3,6 @@ from typing import List, Tuple
 import math
 import ezdxf
 from ezdxf.document import Drawing
-from ezdxf.entities.lwpolyline import LWPolyline
 
 from ezdxf.layouts.layout import Modelspace
 
@@ -65,8 +64,6 @@ UNIT_TABLE = (
     'usmi',  # US Survey Mile
 )
 
-# FIXME FIX SEGMENT_LENGTH implementation
-
 # Default conversion parameter
 NUM_SEGMENTS = 10
 
@@ -85,6 +82,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
         units (str, optional): Units of segment_length. Defaults to 'um'.
     Raises:
         Warning: Invalid units
+        Warning: segment_length is too large - check units
     Returns:
         TGeometryList: List of points generated from given lines
     """
@@ -117,24 +115,40 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
             # Create points based on number of segments desired
             if num_segments:
 
-                # Calc segment length based on num_segments
-                x_difference = (end_point[0] - start_point[0]) / num_segments  
+                # Calc x_difference and y_difference
+                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
+                y_difference = ((end_point[1] - start_point[1]) / num_segments)
 
-            # Create lines based on minimum line length TODO get working
+            # Create lines based on minimum line length 
             elif segment_length:
 
                 # Calc segment angle based on min_length
                 segment_length = segment_length*conversion_factor
 
                 # Calc num_segments from segment_length
-                num_segments = ((start_point[1] - end_point[1]) / segment_length)  
+                num_segments = ((math.dist(start_point,end_point)) / segment_length)  
+
+                # Catch num_segments being too large
+                if num_segments < 0:
+
+                    # Let user know about error
+                    warning ('segment_length is too large - check units')
+
+                    # Use default param
+                    num_segments = NUM_SEGMENTS
+                
+                # Calc x_difference and y_difference
+                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
+                y_difference = ((end_point[1] - start_point[1]) / num_segments)
+
             else:
 
                 # Default param
                 num_segments = NUM_SEGMENTS
 
-                # Calc segment length based on num_segments
-                x_difference = (end_point[0] - start_point[0]) / num_segments  
+                # Calc x_difference and y_difference
+                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
+                y_difference = ((end_point[1] - start_point[1]) / num_segments)
 
             # Define slope
             slope = 0.0
@@ -162,7 +176,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
             y_intercept = start_point[1] - slope*start_point[0]
 
             # Generate points based on x-values
-            for index in range(0,num_segments):
+            for index in range(0,int(num_segments)):
 
                 if slope_type == 'NONE':
 
@@ -179,7 +193,6 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                 elif slope_type == 'VERTICAL':
 
                     # Calculate next point for vertical slope
-                    y_difference = ((end_point[1] - start_point[1])/num_segments)
                     x = start_point[0]
                     y = start_point[1] + y_difference*index
 
@@ -226,6 +239,7 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
         units (str, optional): Units of segment_length. Defaults to 'um'.
     Raises:
         Warning: Invalid units
+        Warning: segment_length is too large - check units
     Returns:
         TGeometryList: List of lines generated from given arcs
     """
@@ -267,14 +281,31 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
                 # Calc segment angle based on num_segments
                 segment_angle = degree/(num_segments)  
 
-            # Create lines based on minimum line length TODO add catch for too long segment length
+            # Create lines based on minimum line length 
             elif segment_length > 0:
 
-                # Calc segment angle based on min_length
-                segment_angle = (segment_length*conversion_factor/(radius*2*math.pi))*360
+                # Calculate arc length
+                arc_length = 2*math.pi*radius*(degree/360)
 
-                # Calc num_segments from segment_angle
-                num_segments = int(degree/segment_angle)
+                # Catch too large segment_length
+                if segment_length*conversion_factor > arc_length:
+                    
+                    # Let user know about error
+                    warning ('segment_length is too large - check units')
+                    
+                    # Default param
+                    num_segments = NUM_SEGMENTS
+    
+                    # Calc segment angle based on num_segments
+                    segment_angle = degree/(num_segments) 
+
+                else:
+
+                    # Calc segment angle based on min_length
+                    segment_angle = (segment_length*conversion_factor/(radius*2*math.pi))*360
+
+                    # Calc num_segments from segment_angle
+                    num_segments = degree/segment_angle
             else:
 
                 # Default param
@@ -283,8 +314,10 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
                 # Calc segment angle based on num_segments
                 segment_angle = degree/(num_segments)  
 
+            #end if
+
             # For each point on the arc
-            for index in range(0, num_segments+1):
+            for index in range(0, int(num_segments)+1):
 
                 # Calc point's angle
                 angle = start_angle + (segment_angle * index) 
@@ -298,7 +331,7 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
             #end for
 
             # Make each point into a line
-            for index in range(0, num_segments):
+            for index in range(0, int(num_segments)):
 
                 # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
                 line = (
@@ -328,11 +361,35 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
                         ]
                 )
 
-                #Update line_index
+                # Update line_index
                 line_index += 1
 
                 # Add line to lines
                 lines.append(line)
+
+            # Create line to connect last line to end
+            # Meant for using segment_length where the last line does not connect to end point
+            elif num_segments%1 != 0:
+                
+                # Find end point
+                x = radius*math.cos(math.radians(end_angle))/conversion_factor
+                y = radius*math.sin(math.radians(end_angle))/conversion_factor 
+
+                 # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                line = (
+                        f'LINE:{line_index}',
+                        [
+                            points[-1],
+                            tuple([x*conversion_factor,y*conversion_factor,0.0])
+                        ]
+                )
+
+                # Update line_index
+                line_index += 1
+
+                # Add line to lines
+                lines.append(line)
+
         else:
 
             # If not an arc just add
@@ -343,17 +400,14 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
     return lines
 #end def
 
-def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
+def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0) -> TGeometryList:
     '''
     Converts ellipsis into a series of arcs
 
     Args:
         given_ellipsis (TGeometryList): Given ellipses to convert
         num_segments (float, optional): Number of arcs to convert the given ellipse into. Defaults to 0.
-        segment_length (float, optional): Size of the arc to convert the given ellipse into. Defaults to 0.
-        units (str, optional): Units of segment length.
     Raises:
-        Warning: Segment length > circumfrance
         Warning: Divide by zero error
         Warning: Invalid units
     Returns:
@@ -381,34 +435,10 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
         # Define angle to create points list from
         angle: float = []
 
-        # Set conversion factor
-        if units in UNIT_TABLE:
-            # Set units to passed units
-            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
-        else:
-            conversion_factor = 1
-            raise Exception('Invalid Units {}', units) from None
-
         if num_segments:
 
             # Calculate angle length from num_segments
             angle = (360/num_segments)/2 
-
-        elif segment_length:
-
-            # Circumfrance of Ellipse
-            # = 2*PI*sqrt((a^2 + b^2)/2)
-            circumfrance = 2*math.pi*math.sqrt((major_radius*major_radius + minor_radius*minor_radius)/2)
-
-            if segment_length/conversion_factor > circumfrance:
-                warning('Invalid segment_length: segment_length > circumfrance')
-                continue
-
-            # Calculate angle length from segment_length
-            angle = (segment_length/circumfrance) * 360
-
-            # Calculate the number of segments 
-            # num_segments = 
 
         else:
 
@@ -425,7 +455,7 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
 
         # Generate key points to define arcs by
         # Need to generate 2x number of points to account for midpoints
-        for index in range(0,2*num_segments):  
+        for index in range(0,2*int(num_segments)):  
 
             # Calculate current angle and radius
             theta = index*angle
@@ -444,7 +474,7 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
         #end for
 
         # Find arc that encompasses 3 points
-        for index in range(0,num_segments):
+        for index in range(0,int(num_segments)):
 
             # Define 3 points to create arc from
             p1x: float = points[2*index][0]
@@ -472,8 +502,8 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
             arc = (
                     f'ARC:{arc_index}',
                         [
-                            tuple([cx/conversion_factor,cy/conversion_factor,0]),
-                            tuple([radius/conversion_factor,start_angle,end_angle])
+                            tuple([cx,cy,0]),
+                            tuple([radius,start_angle,end_angle])
                         ]
             )
             
@@ -589,7 +619,7 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
     return arcs_lines
 #end def
 
-def spline_to_lines(given_lwpolyline: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um')-> TGeometryList:
+def spline_to_lines(given_lwpolyline: TGeometryList)-> TGeometryList:
 
     # Create modelspace
     # Create lwpolyline entity
@@ -634,7 +664,7 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
     elif given_geometry_type == 'ELLIPSE':  
         
         # Ellipses can only be directly converted into arcs
-        return convert_to('ARC', return_geometry_type, ellipse_to_arcs(given_geometry, num_segments, min_length, units))
+        return convert_to('ARC', return_geometry_type, ellipse_to_arcs(given_geometry, num_segments))
 
     elif given_geometry_type == 'LWPOLYLINE':
 
