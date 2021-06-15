@@ -136,6 +136,7 @@ def get_hifi_geometry(
     return []
 #end def
 
+# TODO add convert params
 def import_dxf_file(
     filename: str,
     allowedtypes: List[str] = [],
@@ -257,7 +258,7 @@ def import_dxf_file(
                         ]
             )
 
-            # If line is an allowed type or allowedtypes was not set
+            # If arc is an allowed type or allowedtypes was not set
             if name in allowedtypes or not allowedtypes:
 
                 # Add line to geometries
@@ -266,13 +267,12 @@ def import_dxf_file(
              # If convert flag is set and point is a valid type to be converted to
             elif convert and get_hifi_geometry(name,allowedtypes):
 
-                # Convert ellipse geometry to a TGeometryList
+                # Convert arc geometry to a TGeometryList
                 given_geometry_list: TGeometryList = []
                 given_geometry_list.append(arc)
 
-                # Down-convert line geometry to point
+                # Down-convert arc geometry
                 arc_converted = geometry_to_line.convert_to('ARC',get_hifi_geometry(name,allowedtypes),given_geometry_list)
-
 
                 # Add converted geometry to geometries
                 for geometry in arc_converted:
@@ -342,9 +342,26 @@ def import_dxf_file(
             spline = (
                 f'{name}:{entity_index}',points
             )
+            
+            # If spline is an allowed type or allowedtypes was not set
+            if name in allowedtypes or not allowedtypes:
+                
+                # Add spline to geometries
+                geometries.append(spline) 
 
-            # Add spline to geometries
-            geometries.append(spline)
+            # If convert flag is set and there exists a geometry for ellipse to be converted to
+            elif convert and get_hifi_geometry(name,allowedtypes):
+
+                # Convert ellipse geometry to a TGeometryList
+                given_geometry_list: TGeometryList = []
+                given_geometry_list.append(spline)
+
+                # Down-convert ellipse geometry to next highest fidelity geometry
+                spline_converted = geometry_to_line.convert_to('SPLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
+
+                # Add converted geometry to geometries
+                for geometry in spline_converted:
+                    geometries.append(geometry)
 
         elif name == 'LWPOLYLINE':
             points: List[Tuple[float, ...]] = []
@@ -441,7 +458,8 @@ def export_dxf_file(
     # Get modelspace
     model_space: Modelspace = dxf_drawing.modelspace()
 
-    # Check to make sure that scans is not null TODO update for list of null geometries
+    # Check to make sure that scans is not null 
+    # TODO update for list of null geometries
     if len(scans) == 0:
         raise Exception('Scans contains no objects') from None
 
@@ -682,6 +700,8 @@ def export_txt_file(
     return True
 #end def
 
+# TODO add convert params
+# TODO add convert procedures
 def import_csv_file(
     filename: str,
     allowedtypes: List[str] = [],
