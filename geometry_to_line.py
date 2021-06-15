@@ -1,10 +1,11 @@
 from logging import warning
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 import math
 import ezdxf
 from ezdxf.document import Drawing
 
 from ezdxf.layouts.layout import Modelspace
+from ezdxf.math import Vertex
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.1.0'
@@ -71,6 +72,7 @@ NUM_SEGMENTS = 10
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
 
+# FIXME error when converting spline to point, has to do with slope too jagged
 def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
     """
     Convert lines to a series of point geometries
@@ -181,7 +183,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                 if slope_type == 'NONE':
 
                     # Calculate next point for a normal slope
-                    x = start_point[0] + x_difference*index*(1 if (start_point[0] - end_point[0]) > 0 else -1)
+                    x = start_point[0] + x_difference*index*(-1 if (start_point[1] - end_point[1]) > 0 else -1)
                     y = x*slope + y_intercept
 
                 elif slope_type == 'HORIZONTAL':
@@ -556,7 +558,7 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
 
         # Convert points to proper units
         values: List[Tuple[float, ...]] = []
-        for i in range(len(points)): values.append(tuple(point/1 for point in points[i]))
+        for i in range(len(points)): values.append(tuple(points[i]))
 
         # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
         model_space.add_lwpolyline(
@@ -573,7 +575,7 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
         # Convert from ezdxf format to TGeometryList format
         for entity in converted_lwpolyline.entities:
 
-            # Get enetity name
+            # Get entity name
             name: str = entity.DXFTYPE
 
             if name == 'LINE':
@@ -619,17 +621,112 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
     return arcs_lines
 #end def
 
-def spline_to_lines(given_lwpolyline: TGeometryList)-> TGeometryList:
+def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
+    """
+    Convert spline into a list of lines
 
-    # Create modelspace
-    # Create lwpolyline entity
-    # Use flatten method to create lines from spline
-    # Convert to my format
+    Args:
+        given_spline (TGeometryList): Given spline
 
-    # spl = model_space.entity_space.entities
-    # sasdfa = spl[0].flattening(0.10)
-    # print
-    print
+    Returns:
+        TGeometryList: List of lines that represent the given geometry
+    """
+
+    # List of lines that will be generated
+    lines: TGeometryList = []
+
+    # Arc index
+    lines_index: int = 0
+
+    # Run through all given spline
+    for spline in given_spline:
+
+        # Create DXF file with given filename
+        dxf_drawing: Drawing = ezdxf.new('R2010')
+
+        # Create modelspace
+        model_space: Modelspace = dxf_drawing.modelspace()
+
+        # Spline values
+        points = spline[1]
+
+        # Create spline entity
+        control_points: Iterable[Vertex] = []
+
+        # Convert tuple to iterable of vertices
+        for i in range(points[0][2]): control_points.append(tuple(points[i+1]))
+
+        # Determine if the spline is open or closed
+        if points[0][1] == 1:  
+
+            # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+            model_space.add_rational_spline(
+                control_points, 
+                points[points[0][2]+2], 
+                points[0][0], 
+                points[points[0][2]+1]
+                )
+        else:
+
+            # Create spline from ('SPLINE:#': [DEGREE, CLOSED, # CONTROL POINT(S) (#,BOOLEAN,#)], CONTROL POINT(S) [(X,Y,Z)], KNOT(S) [#,...], WEIGHT(S) [#,...])
+            model_space.add_closed_rational_spline(
+                control_points, 
+                points[points[0][2]+2], 
+                points[0][0], 
+                points[points[0][2]+1]
+                )
+
+        # Use dxf explode method to create arc and lines from lwpolyline
+        dxf_spline = model_space.entity_space.entities[0]
+        spline_iter =  dxf_spline.flattening(10) # TODO change this to a passed param
+        spline_points: TGeometryList = []
+
+        # Convert from iter[Vec] to tuple[float,...]
+        for entity in spline_iter: spline_points.append(tuple(entity.xyz))
+
+        # Convert from ezdxf format to TGeometryList format
+        for index in range(len(spline_points)-1):
+
+            # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+            line = (
+                    f'LINE:{lines_index}',
+                    [
+                        tuple(spline_points[index]),
+                        tuple(spline_points[index+1])
+                    ]
+            )
+
+            # Add line to list of lines
+            lines.append(line)
+            
+            # Update index
+            lines_index += 1
+
+        #end for
+
+        # if spline is closed
+        if dxf_spline.closed:
+            # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+            line = (
+                    f'LINE:{lines_index}',
+                    [
+                        tuple(spline_points[-1]),
+                        tuple(spline_points[0])
+                    ]
+            )
+
+            # Add line to list of lines
+            lines.append(line)
+            
+            # Update index
+            lines_index += 1
+        #end if
+
+    #end for
+
+    # Return list of lines
+    return lines
+#end def
 
 def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, min_length: float = 0, units: str = 'um') -> TGeometryList:
     '''
@@ -674,7 +771,7 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
     elif given_geometry_type == 'SPLINE':
 
         # LWPolylines are directly converted to arcs and lines
-        return convert_to('LINE', return_geometry_type, spline_to_lines(given_geometry, num_segments, min_length, units))
+        return convert_to('LINE', return_geometry_type, spline_to_lines(given_geometry))
 
     #end if
 #end def
