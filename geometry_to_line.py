@@ -68,6 +68,9 @@ UNIT_TABLE = (
 # Default conversion parameter
 NUM_SEGMENTS = 10
 
+# Spline conversion parameter
+SPLINE_PRECISION = 100
+
 # Define type for containing geometry elements
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
@@ -620,13 +623,12 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
     return arcs_lines
 #end def
 
-def spline_to_lines(given_spline: TGeometryList, num_segments: float = 0)-> TGeometryList:
+def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
     """
     Convert spline into a list of lines
 
     Args:
         given_spline (TGeometryList): Given spline
-        num_segments (float, optional): Number of arcs to convert the given ellipse into. Defaults to 0.
 
     Returns:
         TGeometryList: List of lines that represent the given geometry
@@ -676,9 +678,10 @@ def spline_to_lines(given_spline: TGeometryList, num_segments: float = 0)-> TGeo
                 points[points[0][2]+1]
                 )
 
+
         # Use dxf explode method to create arc and lines from lwpolyline
         dxf_spline = model_space.entity_space.entities[0]
-        spline_iter =  dxf_spline.flattening(num_segments)
+        spline_iter =  dxf_spline.flattening(SPLINE_PRECISION)
         spline_points: TGeometryList = []
 
         # Convert from iter[Vec] to tuple[float,...]
