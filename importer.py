@@ -98,12 +98,12 @@ def get_hifi_geometry(
 
         # SPLINE -> LINES -> POINTS
         # If line is an exceptable geometry
-        if 'LINE' in geometries:
+        if 'LINE' in allowedtypes:
 
             return 'LINE'
         
         # If point is an exceptable geometry
-        elif 'POINT' in geometries:
+        elif 'POINT' in allowedtypes:
 
             return 'POINT'
     
@@ -112,17 +112,17 @@ def get_hifi_geometry(
 
         # LWPOLYLINE -> ARCS/LINES -> LINES -> POINTS
         # If arc and line are expectable geometries
-        if 'ARC' in geometries and 'LINE' in geometries:
+        if 'ARC' in allowedtypes and 'LINE' in allowedtypes:
 
             return 'ARC'
         
         # If only line is an exceptable geometry
-        elif 'ARC' not in geometries and 'LINE' in geometries:
+        elif 'ARC' not in allowedtypes and 'LINE' in allowedtypes:
 
             return 'LINE'
 
         # If only point is an exceptable geometry
-        elif 'POINT' in geometries:
+        elif 'POINT' in allowedtypes:
 
             return 'POINT'
 
@@ -304,7 +304,7 @@ def import_dxf_file(
                 given_geometry_list.append(ellipse)
 
                 # Down-convert ellipse geometry to next highest fidelity geometry
-                ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
+                ellipse_converted = geometry_to_line.convert_to('ELLIPSE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
 
                 # Add converted geometry to geometries
                 for geometry in ellipse_converted:
@@ -381,15 +381,12 @@ def import_dxf_file(
                 given_geometry_list: TGeometryList = []
                 given_geometry_list.append(lwpolyline)
 
-                # Down-convert ellipse geometry to next highest fidelity geometry TODO remove 100 param
-                ellipse_converted = geometry_to_line.convert_to('LWPOLYLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list,100)
+                # Down-convert ellipse geometry to next highest fidelity geometry
+                lwpolyline_converted = geometry_to_line.convert_to('LWPOLYLINE',get_hifi_geometry(name,allowedtypes),given_geometry_list)
 
                 # Add converted geometry to geometries
-                geometries.append(ellipse_converted)
-
-
-            # Add spline to geometries
-            geometries.append(lwpolyline)
+                for geometry in lwpolyline_converted:
+                    geometries.append(geometry)
 
         # Unsupported geometries
         else:
@@ -428,7 +425,7 @@ def export_dxf_file(
         bool: True upon successful completion
     '''
 
-    # Create DXF file with given filename
+    # Create DXF file
     dxf_drawing: Drawing = ezdxf.new('R2010')
 
     # Set output units
