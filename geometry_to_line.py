@@ -1,6 +1,11 @@
 from logging import warning
 from typing import List, Tuple
 import math
+import ezdxf
+from ezdxf.document import Drawing
+from ezdxf.entities.lwpolyline import LWPolyline
+
+from ezdxf.layouts.layout import Modelspace
 
 __author__ = 'Joseph Lawler'
 __version__ = '1.1.0'
@@ -98,62 +103,114 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
         start_point = values[0]
         end_point = values[1]
 
-        # Set conversion factor
-        if units in UNIT_TABLE:
-            # Set units to passed units
-            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+        # Make sure start and end points are not the same
+        if not start_point == end_point:
+
+            # Set conversion factor
+            if units in UNIT_TABLE:
+                # Set units to passed units
+                conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+            else:
+                conversion_factor = 1
+                raise Exception('Invalid Units {}', units) from None
+
+            # Create points based on number of segments desired
+            if num_segments:
+
+                # Calc segment length based on num_segments
+                x_difference = (end_point[0] - start_point[0]) / num_segments  
+
+            # Create lines based on minimum line length TODO get working
+            elif segment_length:
+
+                # Calc segment angle based on min_length
+                segment_length = segment_length*conversion_factor
+
+                # Calc num_segments from segment_length
+                num_segments = ((start_point[1] - end_point[1]) / segment_length)  
+            else:
+
+                # Default param
+                num_segments = NUM_SEGMENTS
+
+                # Calc segment length based on num_segments
+                x_difference = (end_point[0] - start_point[0]) / num_segments  
+
+            # Define slope
+            slope = 0.0
+
+            # Used as indicator for special cases
+            slope_type: str = 'NONE'
+
+            if (start_point[1]-end_point[1]) == 0:
+
+                # Horizontal line
+                slope_type = 'HORIZONTAL'
+
+            elif (start_point[0]-end_point[0]) == 0:
+
+                # Vertical line
+                slope_type = 'VERTICAL'
+
+            else:
+
+                # Calculate the slope using point slope form
+                slope = ((start_point[1]-end_point[1])/(start_point[0]-end_point[0]))
+            #end if
+
+            # Calculate y-intercept
+            y_intercept = start_point[1] - slope*start_point[0]
+
+            # Generate points based on x-values
+            for index in range(0,num_segments):
+
+                if slope_type == 'NONE':
+
+                    # Calculate next point for a normal slope
+                    x = start_point[0] + x_difference*index*(1 if (start_point[0] - end_point[0]) > 0 else -1)
+                    y = x*slope + y_intercept
+
+                elif slope_type == 'HORIZONTAL':
+
+                    # Calculate next point for a horizontal slope
+                    x = start_point[0] + x_difference*index
+                    y = start_point[1]
+
+                elif slope_type == 'VERTICAL':
+
+                    # Calculate next point for vertical slope
+                    y_difference = ((end_point[1] - start_point[1])/num_segments)
+                    x = start_point[0]
+                    y = start_point[1] + y_difference*index
+
+                # Create point entry: ('POINT:#': [(X,Y,Z)])
+                point = (
+                    f'POINT:{point_index}',
+                        [
+                            tuple([x,y,0.0]),
+                        ]
+                )
+
+                # Update point_index
+                point_index += 1
+
+                # Add point to points
+                points.append(point)
         else:
-            conversion_factor = 1
-            raise Exception('Invalid Units {}', units) from None
-
-        # Create points based on number of segments desired
-        if num_segments:
-
-            # Calc segment length based on num_segments
-            x_difference = (end_point[0] - start_point[0]) / num_segments  
-
-        # Create lines based on minimum line length TODO get working
-        elif segment_length:
-
-            # Calc segment angle based on min_length
-            segment_length = segment_length*conversion_factor
-
-            # Calc num_segments from segment_length
-            num_segments = ((start_point[1] - end_point[1]) / segment_length)  
-        else:
-            
-            # Default param
-            num_segments = NUM_SEGMENTS
-
-            # Calc segment length based on num_segments
-            x_difference = (end_point[0] - start_point[0]) / num_segments  
-
-        # Calculate the slope using point slope form
-        slope = ((start_point[1]-end_point[1])/(start_point[0]-end_point[0]))
-
-        # Calculate y-intercept
-        y_intercept = start_point[1] - slope*start_point[0]
-
-        # Generate points based on x-values
-        for index in range(0,num_segments):
-
-            x = start_point[0] + x_difference*index*(1 if (start_point[0] - end_point[0]) > 0 else -1)
-            y = x*slope + y_intercept
-
+            # Same start and end point
             # Create point entry: ('POINT:#': [(X,Y,Z)])
             point = (
                 f'POINT:{point_index}',
                     [
-                        tuple([x,y,0.0]),
+                        tuple([start_point[0],start_point[1],0.0]),
                     ]
             )
 
-            # Update point_index
-            point_index += 1
-
             # Add point to points
             points.append(point)
-        #end for
+
+        # end if
+    #end for
 
     return points
 #end def
@@ -182,99 +239,107 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
     # Run through all given arcs
     for arc in given_arcs:
 
-        # Define arc values
-        values = arc[1]
-        center = values[0]
-        radius = values[1][0]
-        start_angle = values[1][1]
-        end_angle = values[1][2]
-        degree = end_angle - start_angle
+        # If an arc
+        if arc[0].__contains__('ARC'):
 
-        # Points
-        points: List[Tuple[float, ...]] = []
+            # Define arc values
+            values = arc[1]
+            center = values[0]
+            radius = values[1][0]
+            start_angle = values[1][1]
+            end_angle = values[1][2]
+            degree = end_angle - start_angle
 
-        # Set conversion factor
-        if units in UNIT_TABLE:
-            # Set units to passed units
-            conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+            # Points
+            points: List[Tuple[float, ...]] = []
+
+            # Set conversion factor
+            if units in UNIT_TABLE:
+                # Set units to passed units
+                conversion_factor = CONVERSION_FACTORS[UNIT_TABLE.index(units)+1]
+            else:
+                conversion_factor = 1
+                raise Exception('Invalid Units {}', units) from None
+
+            # Create lines based on number of segments desired
+            if num_segments > 2:
+
+                # Calc segment angle based on num_segments
+                segment_angle = degree/(num_segments)  
+
+            # Create lines based on minimum line length TODO add catch for too long segment length
+            elif segment_length > 0:
+
+                # Calc segment angle based on min_length
+                segment_angle = (segment_length*conversion_factor/(radius*2*math.pi))*360
+
+                # Calc num_segments from segment_angle
+                num_segments = int(degree/segment_angle)
+            else:
+
+                # Default param
+                num_segments = NUM_SEGMENTS
+
+                # Calc segment angle based on num_segments
+                segment_angle = degree/(num_segments)  
+
+            # For each point on the arc
+            for index in range(0, num_segments+1):
+
+                # Calc point's angle
+                angle = start_angle + (segment_angle * index) 
+
+                # Convert to cartesian
+                x = radius*math.cos(math.radians(angle))/conversion_factor  
+                y = radius*math.sin(math.radians(angle))/conversion_factor 
+
+                # Add point with center offset
+                points.append([x+center[0], y+center[1], center[2]]) 
+            #end for
+
+            # Make each point into a line
+            for index in range(0, num_segments):
+
+                # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                line = (
+                        f'LINE:{line_index}',
+                        [
+                            tuple([conversion_factor * x for x in points[index]]),
+                            tuple([conversion_factor * x for x in points[index+1]])
+                        ]
+                )
+
+                # Update line_index
+                line_index += 1
+
+                # Add line to lines
+                lines.append(line)
+            #end for
+
+            # Connect ends
+            if end_angle - start_angle == 360:
+
+                # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                line = (
+                        f'LINE:{line_index}',
+                        [
+                            tuple([conversion_factor * x for x in points[num_segments]]),
+                            tuple([conversion_factor * x for x in points[0]])
+                        ]
+                )
+
+                #Update line_index
+                line_index += 1
+
+                # Add line to lines
+                lines.append(line)
         else:
-            conversion_factor = 1
-            raise Exception('Invalid Units {}', units) from None
 
-        # Create lines based on number of segments desired
-        if num_segments > 2:
+            # If not an arc just add
+            lines.append(arc)
 
-            # Calc segment angle based on num_segments
-            segment_angle = degree/(num_segments)  
-
-        # Create lines based on minimum line length TODO add catch for too long segment length
-        elif segment_length > 0:
-
-            # Calc segment angle based on min_length
-            segment_angle = (segment_length*conversion_factor/(radius*2*math.pi))*360
-
-            # Calc num_segments from segment_angle
-            num_segments = int(degree/segment_angle)
-        else:
-            
-            # Default param
-            num_segments = NUM_SEGMENTS
-
-            # Calc segment angle based on num_segments
-            segment_angle = degree/(num_segments)  
-
-        # For each point on the arc
-        for index in range(0, num_segments+1):
-
-            # Calc point's angle
-            angle = start_angle + (segment_angle * index) 
-
-            # Convert to cartesian
-            x = radius*math.cos(math.radians(angle))/conversion_factor  
-            y = radius*math.sin(math.radians(angle))/conversion_factor 
-
-            # Add point with center offset
-            points.append([x+center[0], y+center[1], center[2]]) 
-        #end for
-
-        # Make each point into a line
-        for index in range(0, num_segments):
-
-            # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            line = (
-                    f'LINE:{line_index}',
-                    [
-                        tuple([conversion_factor * x for x in points[index]]),
-                        tuple([conversion_factor * x for x in points[index+1]])
-                    ]
-            )
-            
-            # Update line_index
-            line_index += 1
-
-            # Add line to lines
-            lines.append(line)
-        #end for
-        
-        # Connect ends
-        if end_angle - start_angle == 360:
-
-            # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
-            line = (
-                    f'LINE:{line_index}',
-                    [
-                        tuple([conversion_factor * x for x in points[num_segments]]),
-                        tuple([conversion_factor * x for x in points[0]])
-                    ]
-            )
-            
-            #Update line_index
-            line_index += 1
-            
-            # Add line to lines
-            lines.append(line)
         #end if
-
+    #end if
     return lines
 #end def
 
@@ -425,17 +490,104 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0, segm
     return arcs
 #end def
     
-def lwpolyline_to_arcs_lines(given_lwpolyline: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um')-> TGeometryList:
+def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
+    """
+    Convert lwpolyline into a list of arcs and lines
 
-    # Create modelspace
-    # Create lwpolyline entity
-    # Use explode method to create arc and lines from lwpolyline
-    # Convert to my format
+    Args:
+        given_lwpolylines (TGeometryList): Given polyline
 
-    # lwpolylinw = model_space.entity_space.entities
-    # lsdf = lwpolylinw[0].explode()
-    # print
-    print
+    Returns:
+        TGeometryList: List of arcs and lines that represent the given geometry
+    """
+
+    # List of arcs and lines that will be generated
+    arcs_lines: TGeometryList = []
+
+    # Arc index
+    arcs_lines_index: int = 0
+
+    # Run through all given lwpolylines 
+    for lwpolyline in given_lwpolylines:
+
+        # Create DXF file with given filename
+        dxf_drawing: Drawing = ezdxf.new('R2010')
+
+        # Create modelspace
+        model_space: Modelspace = dxf_drawing.modelspace()
+
+        # Polyline values
+        points = lwpolyline[1]
+
+        # Create lwpolyline entity
+        # Get and remove closed boolean
+        closed: bool = points[-1]
+        del points[-1]
+
+        # Convert points to proper units
+        values: List[Tuple[float, ...]] = []
+        for i in range(len(points)): values.append(tuple(point/1 for point in points[i]))
+
+        # Create lwpolyline from LWPOLYLINE: ('LWPOLYLINE:#:' POINT VALUES [X,Y,Z,START WIDTH,END WIDTH,BULGE], CLOSED/OPEN [BOOLEAN])
+        model_space.add_lwpolyline(
+            values, 
+            dxfattribs={
+                'closed': closed
+                }
+            )
+
+        # Use dxf explode method to create arc and lines from lwpolyline
+        dxf_lwpolyline = model_space.entity_space.entities[0]
+        converted_lwpolyline =  dxf_lwpolyline.explode()
+
+        # Convert from ezdxf format to TGeometryList format
+        for entity in converted_lwpolyline.entities:
+
+            # Get enetity name
+            name: str = entity.DXFTYPE
+
+            if name == 'LINE':
+
+                # Create line entry: ('LINE:#': [START (X,Y,Z), END (X,Y,Z)])
+                line = (
+                        f'LINE:{arcs_lines_index}',
+                        [
+                            tuple([1 * x for x in entity.dxf.start.xyz]),
+                            tuple([1 * x for x in entity.dxf.end.xyz])
+                        ]
+                )
+
+                # Add line to list of arcs and lines
+                arcs_lines.append(line)
+
+            elif name == 'ARC':
+                 
+                # Create arc entry: ('ARC:#': [CENTER (X,Y,Z), RADIUS/START ANGLE/END ANGLE(#,#,#)])
+                arc = (
+                        f'ARC:{arcs_lines_index}',
+                            [
+                                tuple([1 * x for x in entity.dxf.center.xyz]),
+                                tuple([entity.dxf.radius * 1, 
+                                    entity.dxf.start_angle, 
+                                    entity.dxf.end_angle
+                                ])
+                            ]
+                )
+                
+                # Add arc to list of arcs and lines
+                arcs_lines.append(arc)
+            #end if
+            
+            # Update index
+            arcs_lines_index += 1
+
+        #end for
+
+    #end for
+
+    # Return list of arcs and lines
+    return arcs_lines
+#end def
 
 def spline_to_lines(given_lwpolyline: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um')-> TGeometryList:
 
@@ -487,7 +639,7 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
     elif given_geometry_type == 'LWPOLYLINE':
 
         # LWPolylines are directly converted to arcs and lines
-        return convert_to('ARC', return_geometry_type, lwpolyline_to_arcs_lines(given_geometry, num_segments, min_length, units))
+        return convert_to('ARC', return_geometry_type, lwpolyline_to_arcs_lines(given_geometry))
 
     elif given_geometry_type == 'SPLINE':
 
