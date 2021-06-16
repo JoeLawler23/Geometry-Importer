@@ -464,7 +464,6 @@ def export_dxf_file(
     model_space: Modelspace = dxf_drawing.modelspace()
 
     # Check to make sure that scans is not null 
-    # TODO update for list of null geometries
     if len(scans) == 0:
         raise Exception('Scans contains no objects') from None
 
