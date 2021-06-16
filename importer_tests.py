@@ -8,6 +8,9 @@ __version__ = '1.2.0'
 
 PRECISION = 0.001
 
+__author__ = 'Joseph Lawler'
+__version__ = '1.1.0'
+
 class DXF_Error_Tests(unittest.TestCase):
     '''
     Test cases that should produce errors

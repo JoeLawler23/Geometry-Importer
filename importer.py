@@ -284,6 +284,46 @@ def import_dxf_file(
                     geometries.append(geometry)
 
         elif name == 'ELLIPSE':
+            # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
+            ellipse = (
+                f'{name}:{entity_index}',
+                        [
+                            tuple([conversion_factor * x for x in entity.dxf.center.xyz]),
+                            tuple([conversion_factor * x for x in entity.dxf.major_axis.xyz]),
+                            (entity.dxf.ratio, )
+                        ]
+            )
+
+            # Add ellipse to geometries
+            geometries.append(ellipse)
+
+        elif name == 'SPLINE':
+
+            # Create variables
+            points: List[Tuple[float, ...]] = []
+            knots: Tuple[float, ...] = []
+            weights: Tuple[float, ...] = []
+
+            # Add degree,closed,#control points
+            points.append(tuple([entity.dxf.degree, entity.CLOSED, len(entity.control_points)]))
+
+            # Convert control points
+            for index,point in enumerate(entity.control_points):
+                points.append(tuple(conversion_factor*x for x in point))
+            
+            # Convert knots
+            for knot in entity.knots:
+                knots += (knot,)
+            points.append(knots)
+
+            # Create weights if necessary
+            if len(entity.weights) == 0:
+                for point in range(len(entity.control_points)):
+                    weights += (1.0,)
+            else:
+                for point in range(len(entity.control_points)):
+                    weights += (entity.weights[point],)
+            points.append(weights)
 
             # Create ellipse entry: ('ELLIPSE:#': [CENTER (X,Y,Z), MAJOR AXIS ENDPOINT(X,Y,Z), RATIO OF MINOR TO MAJOR AXIS (#)])
             ellipse = (
@@ -464,7 +504,6 @@ def export_dxf_file(
     model_space: Modelspace = dxf_drawing.modelspace()
 
     # Check to make sure that scans is not null 
-    # TODO update for list of null geometries
     if len(scans) == 0:
         raise Exception('Scans contains no objects') from None
 
