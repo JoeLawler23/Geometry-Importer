@@ -2,6 +2,9 @@ from typing import Dict, List, Tuple
 import importer
 import os
 
+__author__ = 'Joseph Lawler'
+__version__ = '1.2.0'
+
 # LETTERS_NUMBERS
 LETTERS_NUMBERS: Dict[str, List[Dict[str, List[Tuple[float, ...]]]]] = {
     '0': [{'LINE0': ((0.8, 0.85, 0.0), (0.65, 1.0, 0.0))},
