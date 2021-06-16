@@ -4,7 +4,7 @@ import importer
 import math
 
 __author__ = 'Joseph Lawler'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 PRECISION = 0.001
 

@@ -15,7 +15,7 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 
 __author__ = 'Joseph Lawler'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)
@@ -80,7 +80,8 @@ def get_hifi_geometry(
     geometry: str,
     allowedtypes: List[str]) -> str:
     '''
-    Return the highest fidelity geometry given a list of geometries for a specific geometry type
+    Summary:
+        Return the highest fidelity geometry given a list of geometries for a specific geometry type
 
     Args:
         geometry (str): geometry type to search below
@@ -1001,12 +1002,26 @@ def export_csv_file(
 
 def import_file(
     filename: str,
-    units: Optional[str]) -> TGeometryList:
+    allowedtypes: List[str] = [],
+    units: Optional[str] = 'um',
+    header: Optional[bool] = True,
+    convert: Optional[bool] = False,
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    segment_units: str = 'um') -> TGeometryList:
     '''
-    Wrapper function for importing all filetypes
+    Summary:
+        Wrapper function for importing all filetypes
     Args:
         filname (str): Filename with path
-        units (str, optional): Units to import in, defaults to Microns.
+        allowedtypes (List[str]): List of allowed geometry types (eg. POINT, LINE...),
+        NOTE If the list is empty then all types will be imported.
+        units (str, optional): Units to import CSV in, defaults to 'um'=Microns.
+        header (bool, optional): Flag to remove header line
+        convert (bool, optional): flag for whether to convert non-allowed geometry types to allowable geometry types
+        num_segments (float, optional): Number of segments to divide given geometry into to produce the return geometry. Defaults to 0.
+        segment_length (float, optional): Length of segments to divide given geometry into to produce return geometry. Defaults to 0.
+        units (str, optional): Units for segment length. Defaults to 'um'.
     Raises:
         Exception: Unknown filetype
     Returns:
@@ -1019,15 +1034,15 @@ def import_file(
     # Run appropriate function
     # DXF file
     if (file_type == "DXF"):
-        return import_dxf_file(filename)
+        return import_dxf_file(filename,allowedtypes,convert,num_segments,segment_length,segment_units)
 
     # CSV file
     elif (file_type == "CSV"):
-        return import_csv_file(filename)
+        return import_csv_file(filename,allowedtypes,units,header,convert,num_segments,segment_length,segment_units)
 
     # TXT file
     elif (file_type == "TXT"):
-        return import_txt_file(filename)
+        return import_txt_file(filename,units)
 
     else:
         # Unknown filetype

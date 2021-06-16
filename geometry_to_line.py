@@ -8,7 +8,7 @@ from ezdxf.layouts.layout import Modelspace
 from ezdxf.math import Vertex
 
 __author__ = 'Joseph Lawler'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 CONVERSION_FACTORS = (
     1.0,  # 0 = Unitless (NO CONVERION USED)
@@ -75,10 +75,14 @@ SPLINE_PRECISION = 100
 TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
 
-def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
+def lines_to_points(
+    given_lines: TGeometryList, 
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    units: str = 'um') -> TGeometryList:
     '''
-    Convert lines to a series of point geometries
-
+    Summary:
+        Convert lines to a series of point geometries
     Args:
         given_lines (TGeometryList): Given line to convert
         num_segments (float, optional): Number of points to convert the given arc into. Defaults to 0.
@@ -232,10 +236,14 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
     return points
 #end def
 
-def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
+def arc_to_lines(
+    given_arcs: TGeometryList, 
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    units: str = 'um') -> TGeometryList:
     '''
-    Converts arcs to a series of line geometries
-
+    Summary:
+        Converts arcs to a series of line geometries
     Args:
         given_arcs (TGeometryList): Given arc to convert
         num_segments (float, optional): Number of lines to convert the given arc into. Defaults to 0.
@@ -404,10 +412,12 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
     return lines
 #end def
 
-def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0) -> TGeometryList:
+def ellipse_to_arcs(
+    given_ellipsis: TGeometryList, 
+    num_segments: float = 0) -> TGeometryList:
     '''
-    Converts ellipsis into a series of arcs
-
+    Summary:
+        Converts ellipsis into a series of arcs
     Args:
         given_ellipsis (TGeometryList): Given ellipses to convert
         num_segments (float, optional): Number of arcs to convert the given ellipse into. Defaults to 0.
@@ -524,13 +534,13 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0) -> T
     return arcs
 #end def
     
-def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
+def lwpolyline_to_arcs_lines(
+    given_lwpolylines: TGeometryList)-> TGeometryList:
     '''
-    Convert lwpolyline into a list of arcs and lines
-
+    Summary:
+        Convert lwpolyline into a list of arcs and lines
     Args:
         given_lwpolylines (TGeometryList): Given polyline
-
     Returns:
         TGeometryList: List of arcs and lines that represent the given geometry
     '''
@@ -623,13 +633,13 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
     return arcs_lines
 #end def
 
-def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
+def spline_to_lines(
+    given_spline: TGeometryList)-> TGeometryList:
     '''
-    Convert spline into a list of lines
-
+    Summary:
+        Convert spline into a list of lines
     Args:
         given_spline (TGeometryList): Given spline
-
     Returns:
         TGeometryList: List of lines that represent the given geometry
     '''
@@ -731,10 +741,16 @@ def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
     return lines
 #end def
 
-def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
+def convert_to(
+    given_geometry_type: str, 
+    return_geometry_type: str, 
+    given_geometry: TGeometryList, 
+    num_segments: float = 0, 
+    segment_length: float = 0, 
+    units: str = 'um') -> TGeometryList:
     '''
-    Wrapper function to down convert any given geometry to a sub-geometry type
-
+    Summary:
+        Wrapper function to down convert any given geometry to a sub-geometry type
     Args:
         given_geometry_type (str): Geometry type of passed values
         return_geometry_type (str): Desired geometry type
@@ -742,7 +758,6 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
         num_segments (float, optional): Number of segments to divide given geometry into to produce the return geometry. Defaults to 0.
         segment_length (float, optional): Length of segments to divide given geometry into to produce return geometry. Defaults to 0.
         units (str, optional): Units for segment length. Defaults to 'um'.
-
     Returns:
         TGeometryList: Desired geometry type return values
     '''
