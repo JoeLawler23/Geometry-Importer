@@ -76,7 +76,7 @@ TGeometryItem = Tuple[str, List[Tuple[float, ...]]]
 TGeometryList = List[TGeometryItem]
 
 def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
-    """
+    '''
     Convert lines to a series of point geometries
 
     Args:
@@ -89,7 +89,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
         Warning: segment_length is too large - check units
     Returns:
         TGeometryList: List of points generated from given lines
-    """
+    '''
 
     # Generated Points
     points: TGeometryList = []
@@ -120,8 +120,8 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
             if num_segments:
 
                 # Calc x_difference and y_difference
-                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
-                y_difference = ((end_point[1] - start_point[1]) / num_segments)
+                x_difference = ((end_point[0] - start_point[0]) / (num_segments-1))  
+                y_difference = ((end_point[1] - start_point[1]) / (num_segments-1))
 
             # Create lines based on minimum line length 
             elif segment_length:
@@ -130,7 +130,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                 segment_length = segment_length*conversion_factor
 
                 # Calc num_segments from segment_length
-                num_segments = ((math.dist(start_point,end_point)) / segment_length)  
+                num_segments = ((math.dist(start_point,end_point)) / segment_length) + 1 
 
                 # Catch num_segments being too large
                 if num_segments < 0:
@@ -142,8 +142,8 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                     num_segments = NUM_SEGMENTS
                 
                 # Calc x_difference and y_difference
-                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
-                y_difference = ((end_point[1] - start_point[1]) / num_segments)
+                x_difference = ((end_point[0] - start_point[0]) / (num_segments-1))  
+                y_difference = ((end_point[1] - start_point[1]) / (num_segments-1))
 
             else:
 
@@ -151,8 +151,8 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
                 num_segments = NUM_SEGMENTS
 
                 # Calc x_difference and y_difference
-                x_difference = ((end_point[0] - start_point[0]) / num_segments)  
-                y_difference = ((end_point[1] - start_point[1]) / num_segments)
+                x_difference = ((end_point[0] - start_point[0]) / (num_segments-1))  
+                y_difference = ((end_point[1] - start_point[1]) / (num_segments-1))
 
             # Define slope
             slope = 0.0
@@ -233,7 +233,7 @@ def lines_to_points(given_lines: TGeometryList, num_segments: float = 0, segment
 #end def
 
 def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
-    """
+    '''
     Converts arcs to a series of line geometries
 
     Args:
@@ -246,7 +246,7 @@ def arc_to_lines(given_arcs: TGeometryList, num_segments: float = 0, segment_len
         Warning: segment_length is too large - check units
     Returns:
         TGeometryList: List of lines generated from given arcs
-    """
+    '''
     
     # Generated Lines
     lines: TGeometryList = [] 
@@ -525,7 +525,7 @@ def ellipse_to_arcs(given_ellipsis: TGeometryList, num_segments: float = 0) -> T
 #end def
     
 def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
-    """
+    '''
     Convert lwpolyline into a list of arcs and lines
 
     Args:
@@ -533,7 +533,7 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
 
     Returns:
         TGeometryList: List of arcs and lines that represent the given geometry
-    """
+    '''
 
     # List of arcs and lines that will be generated
     arcs_lines: TGeometryList = []
@@ -624,7 +624,7 @@ def lwpolyline_to_arcs_lines(given_lwpolylines: TGeometryList)-> TGeometryList:
 #end def
 
 def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
-    """
+    '''
     Convert spline into a list of lines
 
     Args:
@@ -632,7 +632,7 @@ def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
 
     Returns:
         TGeometryList: List of lines that represent the given geometry
-    """
+    '''
 
     # List of lines that will be generated
     lines: TGeometryList = []
@@ -732,7 +732,7 @@ def spline_to_lines(given_spline: TGeometryList)-> TGeometryList:
 #end def
 
 def convert_to(given_geometry_type: str, return_geometry_type: str, given_geometry: TGeometryList, num_segments: float = 0, segment_length: float = 0, units: str = 'um') -> TGeometryList:
-    """
+    '''
     Wrapper function to down convert any given geometry to a sub-geometry type
 
     Args:
@@ -745,7 +745,7 @@ def convert_to(given_geometry_type: str, return_geometry_type: str, given_geomet
 
     Returns:
         TGeometryList: Desired geometry type return values
-    """
+    '''
 
     if given_geometry_type == return_geometry_type:
 
