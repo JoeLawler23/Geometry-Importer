@@ -265,16 +265,17 @@ LETTERS_NUMBERS: Dict[str, List[Dict[str, List[Tuple[float, ...]]]]] = {
 
 def create_letter_from_dxf(letter: str, scans: List[Dict[str, List[Tuple[float, ...]]]]):
     '''
-    Generate a list of lines from a DXF file representing a letter made only from lines
+    Summary:
+      Generate a list of lines from a DXF file representing a letter made only from lines
 
-    Accepted Geometries: * All other geometries are ignored *
-    - Point
-    - Line
-    - LWPolyline
+      Accepted Geometries: * All other geometries are ignored *
+      - Point
+      - Line
+      - LWPolyline
 
     Args:
-        letter (str): filename
-        scans (List[Dict[str, List[Tuple[float, ...]]]]): letter geometries from importing the dxf file
+      letter (str): filename
+      scans (List[Dict[str, List[Tuple[float, ...]]]]): letter geometries from importing the dxf file
     '''
 
     output: str = "'"+letter+"'"+': ['
@@ -326,7 +327,8 @@ def create_letter_from_dxf(letter: str, scans: List[Dict[str, List[Tuple[float, 
 
 def create_alphabet():
     '''
-    Print out a list of all dxf files, letters only drawn from lines, in the Letters folder
+    Summary:
+      Print out a list of all dxf files, letters only drawn from lines, in the Letters folder
     '''
     # Generate dictionary
     list = os.listdir('Letters')
