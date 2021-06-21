@@ -305,4 +305,4 @@ def create_alphabet(path: str):
 
 # Used to create ALPHABET
 if __name__ == "__main__":
-     create_alphabet('src/autolazeql/fileio/Letters')
+     create_alphabet('/Letters')
