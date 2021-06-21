@@ -1,5 +1,8 @@
 ## Geometry-Import:
 
+# Release 1.2.1
+- Updated alphabet to line to conform to new geometry type
+
 # Release 1.2.0
 - Automatically down convert all geometry types for all file types
 - Down convert based on number of segments or segment length
@@ -210,8 +213,8 @@ create_letter(
       ):
 
       Summary:
-        Generate a list of lines from a DXF file representing a letter made only from lines
-        Meant to be pasted into the LETTERS_NUMBERS dictionary as an entry
+        Generate a list of lines from a DXF file representing a letter
+        Meant to be pasted into the ALPHABET dictionary as an entry
 
       Args:
         letter (str): filename
@@ -220,7 +223,7 @@ create_letter(
 create_alphabet():
       
       Summary:
-        Print out entire NUMBERS_LETTERS dictionary from the Letters folder
+        Print out entire ALPHABET dictionary from the Letters folder
       
 # Geometry_To_Line Functions:
 
